@@ -17,10 +17,14 @@ server_chain="server/certs/server$server_index-chain.cert.pem"
 openssl genrsa -out $server_private_key
 
 ## Create Certificate
+
+extension_flag=""
+extension_flag="-extensions usr_cert"
+
 openssl req \
     -config intermediate/openssl.cnf \
     -key $server_private_key \
-    -new -x509 -days 7300 -sha256 -extensions usr_cert \
+    -new -x509 -days 7300 -sha256 $extension_flag \
     -out $server_cert
 
 cp $server_cert $server_chain

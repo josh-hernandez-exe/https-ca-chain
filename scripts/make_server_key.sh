@@ -22,13 +22,17 @@ if [[ $1 -ne "" ]];then
 	server_index=$1
 fi
 
+config_file="intermediate/openssl.cnf"
 
 server_name="server$server_index-key"
-
 server_private_key="server/private/$server_name.pem"
 server_csr="server/csr/$server_name.csr.pem"
 server_cert="server/certs/$server_name.cert.pem"
 server_chain="server/certs/$server_name.chain.cert.pem"
+
+intermediate_key_file="intermediate/private/intermediate.key.pem"
+intermediate_cert_file="intermediate/certs/intermediate.cert.pem"
+intermediate_chain_file="intermediate/certs/ca-chain.cert.pem"
 
 # Create Key
 openssl genrsa -out $server_private_key 2048
@@ -42,13 +46,16 @@ openssl req -config intermediate/openssl.cnf \
     -new -sha256 \
     -out $server_csr
 
-
 # Process the CSR
 # Note that the following is done as if it was on machine of the intermediate key
-openssl ca -config intermediate/openssl.cnf \
-      -extensions server_cert -days 375 -notext -md sha256 \
-      -in $server_csr \
-      -out $server_cert
+openssl x509 -req -days 999 \
+    -extfile $config_file \
+    -in $server_csr \
+    -extensions server_cert\
+    -CA $intermediate_cert_file \
+    -CAkey $intermediate_key_file \
+    -CAcreateserial \
+    -out $server_cert
 
 if [ $? -ne 0 ];then
 	exit 1;
@@ -60,11 +67,11 @@ chmod 444 $server_cert
 openssl x509 -noout -text -in $server_cert
 
 ### Verify Intermediate Certificate Info based off intermediate
-openssl verify -CAfile intermediate/certs/ca-chain.cert.pem $server_cert
+openssl verify -CAfile $intermediate_chain_file $server_cert
 
 
 # Create Cerfificate Chain
-cat $server_cert intermediate/certs/ca-chain.cert.pem > $server_chain
+cat $server_cert $intermediate_chain_file > $server_chain
 chmod 444 $server_chain
 
 echo "Server Key Creation Complete"

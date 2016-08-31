@@ -28,7 +28,30 @@ var clientCertChainFile=[
     clientName+".chain.cert.pem"
 ].join("/");
 
-
+// var options = {
+//     hostname: 'localhost',
+//     port: 4433,
+//     path: '/',
+//     method: 'GET',
+//     key: fs.readFileSync(clientKeyFile),
+//     cert: fs.readFileSync(clientCertFile),
+//     ca: fs.readFileSync(clientCertFile),
+//     passphrase:"",
+//     requestCert: true,
+//     rejectUnauthorized: true,
+//     ciphers: [
+//       "ECDHE-RSA-AES128-SHA256",
+//       "DHE-RSA-AES128-SHA256",
+//       "AES128-GCM-SHA256",
+//       "!RC4",
+//       "HIGH",
+//       "!MD5",
+//       "!aNULL"
+//     ].join(":"),
+//     honorCipherOrder: true,
+//     secureProtocol: 'TLSv1_method',
+//     secureOptions: constants.SSL_OP_NO_SSLv3 | constants.SSL_OP_NO_SSLv2
+// };
 
 var options = {
     hostname: 'localhost',
@@ -40,19 +63,7 @@ var options = {
     ca: fs.readFileSync(clientCertFile),
     passphrase:"",
     requestCert: true,
-    rejectUnauthorized: true,
-    ciphers: [
-      "ECDHE-RSA-AES128-SHA256",
-      "DHE-RSA-AES128-SHA256",
-      "AES128-GCM-SHA256",
-      "!RC4",
-      "HIGH",
-      "!MD5",
-      "!aNULL"
-    ].join(":"),
-    honorCipherOrder: true,
-    secureProtocol: 'TLSv1_method',
-    secureOptions: constants.SSL_OP_NO_SSLv3 | constants.SSL_OP_NO_SSLv2
+    rejectUnauthorized: true
 };
 
 https.globalAgent.options.ca = [];

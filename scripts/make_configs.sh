@@ -69,62 +69,40 @@ private_key       = \$dir/private/intermediate.key.pem
 certificate       = \$dir/certs/intermediate.cert.pem
 
 # For certificate revocation lists.
-crlnumber         = \$dir/crlnumber
+# crlnumber         = \$dir/crlnumber
 crl               = \$dir/crl/intermediate.crl.pem
-#crl_extensions    = crl_ext
+# crl_extensions    = crl_ext
 default_crl_days  = 30
 
 # SHA-1 is deprecated, so use SHA-2 instead.
 default_md        = sha256
+# default_md        = md5
 
 name_opt          = CA_default
 cert_opt          = CA_default
 default_days      = 375
-preserve          = no
-policy            = policy_loose
 "
 
 
 common_contents="
-[ policy_strict ]
-# The root CA should only sign intermediate certificates that match.
-# See the POLICY FORMAT section of \`man ca\`.
-countryName             = match
-stateOrProvinceName     = match
-organizationName        = match
-organizationalUnitName  = optional
-commonName              = supplied
-emailAddress            = optional
-
-[ policy_loose ]
-# Allow the intermediate CA to sign a more diverse range of certificates.
-# See the POLICY FORMAT section of the \`ca\` man page.
-countryName             = optional
-stateOrProvinceName     = optional
-localityName            = optional
-organizationName        = optional
-organizationalUnitName  = optional
-commonName              = supplied
-emailAddress            = optional
-
 [ req ]
 # Options for the \`req\` tool (\`man req\`).
 default_bits        = 2048
 distinguished_name  = req_distinguished_name
 string_mask         = utf8only
+x509_extensions     = v3_ca
 
 # SHA-1 is deprecated, so use SHA-2 instead.
 default_md          = sha256
 
-# Extension to add when the -x509 option is used.
-x509_extensions     = v3_ca
-
 # For Convience Only (Remove of actual uses)
-#prompt                 = no
-#output_password        = password
+# prompt                 = no
+# output_password        = password
+
+[ req_attributes ]
+challengePassword      = password
 
 [ req_distinguished_name ]
-# See <https://en.wikipedia.org/wiki/Certificate_signing_request>.
 countryName                     = Country Name (2 letter code)
 stateOrProvinceName             = State or Province Name
 localityName                    = Locality Name
@@ -134,12 +112,17 @@ commonName                      = Common Name
 emailAddress                    = Email Address
 
 # Optionally, specify some defaults.
-countryName_default             = GB
-stateOrProvinceName_default     = England
-localityName_default            = London
-0.organizationName_default      = Alice Ltd
-#organizationalUnitName_default =
-#emailAddress_default           =
+countryName_default             = CA
+stateOrProvinceName_default     = Manitoba
+localityName_default            = Winnipeg
+0.organizationName_default      = The Organization
+organizationalUnitName_default  = The Unit
+emailAddress_default            = nameless@unit.organization.example.com
+
+
+
+# [ v3_ca ]
+# authorityInfoAccess = @issuer_info
 
 [ v3_ca ]
 # Extensions for a typical CA (\`man x509v3_config\`).
@@ -147,6 +130,7 @@ subjectKeyIdentifier = hash
 authorityKeyIdentifier = keyid:always,issuer
 basicConstraints = critical, CA:true
 keyUsage = critical, digitalSignature, cRLSign, keyCertSign
+
 
 [ v3_intermediate_ca ]
 # Extensions for a typical intermediate CA (\`man x509v3_config\`).
@@ -165,6 +149,8 @@ authorityKeyIdentifier = keyid,issuer
 keyUsage = critical, nonRepudiation, digitalSignature, keyEncipherment
 extendedKeyUsage = clientAuth, emailProtection
 
+
+
 [ server_cert ]
 # Extensions for server certificates (\`man x509v3_config\`).
 basicConstraints = CA:FALSE
@@ -175,18 +161,14 @@ authorityKeyIdentifier = keyid,issuer:always
 keyUsage = critical, digitalSignature, keyEncipherment
 extendedKeyUsage = serverAuth
 
-[ crl_ext ]
-# Extension for CRLs (\`man x509v3_config\`).
-authorityKeyIdentifier=keyid:always
 
 
-[ ocsp ]
-# Extension for OCSP signing certificates (\`man ocsp\`).
-basicConstraints = CA:FALSE
-subjectKeyIdentifier = hash
-authorityKeyIdentifier = keyid,issuer
-keyUsage = critical, digitalSignature
-extendedKeyUsage = critical, OCSPSigning"
+
+[ issuer_info ]
+OCSP;URI.0 = http://ocsp.example.com/
+caIssuers;URI.0 = http://example.com/ca.cert
+
+"
 
 
 echo -e "$master_config_content\n$common_contents"> "$project_root/master/openssl.cnf"

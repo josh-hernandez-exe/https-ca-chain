@@ -22,11 +22,14 @@ client_chain="client/certs/$client_name.chain.cert.pem"
 ## Create Key for self signed cert
 openssl genrsa -out $client_private_key
 
+extension_flag=""
+# extension_flag="-extensions usr_cert"
+
 ## Create Certificate
 openssl req \
     -config intermediate/openssl.cnf \
     -key $client_private_key \
-    -new -x509 -days 7300 -sha256 -extensions usr_cert \
+    -new -x509 -days 7300 -sha256 $extension_flag \
     -out $client_cert
 
 cp $client_cert $client_chain
