@@ -6,12 +6,42 @@ previous_dir=$(pwd)
 cd $project_root
 
 # This makes it easy to make multiple client certs
+
 client_index=""
-if [[ $1 -ne "" ]];then
-	client_index=$1
-fi
+parent_type="intermediate"
+
+while [[ $# -gt 0 ]]; do
+key="$1"
+value="$2"
+case $key in
+
+    --debug)
+      set -x
+    ;;
+
+    --name)
+    # This makes it easy to make multiple server certs
+      client_index="$value"
+      shift
+    ;;
+
+    --parent-type)
+      parent_type="$value"
+      shift
+    ;;
+
+esac
+shift
+done
 
 source scripts/load_vars.sh
+
+if [ "$parent_cert" == "" ];then
+    exit 1;
+fi
+
+
+
 
 echo "#######################"
 echo "Create Client $client_index Key"
@@ -39,6 +69,8 @@ challengePassword      = password
 
 [ v3_ca ]
 authorityInfoAccess = @issuer_info
+keyUsage = critical, nonRepudiation, digitalSignature, keyEncipherment
+extendedKeyUsage = clientAuth, emailProtection
 
 [ issuer_info ]
 OCSP;URI.0 = http://ocsp.example.com/
@@ -58,14 +90,14 @@ openssl x509 -req \
     -days 999 \
     $passin_string \
     -in $client_csr \
-    -CA $intermediate_cert \
-    -CAkey $intermediate_key \
+    -CA $parent_cert \
+    -CAkey $parent_key \
     -CAcreateserial \
     -out $client_cert
 
 chmod 444 $client_cert
 
-cat $client_cert $intermediate_cert_chain > $client_chain
+cat $client_cert $parent_cert_chain > $client_chain
 
 echo "Client Key Creation Complete"
 cd $previous_dir

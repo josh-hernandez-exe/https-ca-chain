@@ -57,5 +57,6 @@ openssl req -new -x509 \
 # mv $master_key.temp $master_key
 # rm $master_key.temp
 
+touch $master_database
 
 echo "Master Key Creation Complete"

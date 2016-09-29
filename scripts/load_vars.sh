@@ -6,6 +6,8 @@ master_crl="master/crl/master.crl.pem"
 master_serial="master/master.serial"
 master_database="master/master.database.txt"
 
+master_cert_chain=$master_cert
+
 intermediate_cert_dir="intermediate/certs"
 intermediate_cert="$intermediate_cert_dir/intermediate.cert.pem"
 intermediate_cert_chain="$intermediate_cert_dir/intermediate.chain.cert.pem"
@@ -39,3 +41,28 @@ client_csr="client/csr/$client_name.csr.pem"
 client_key="client/private/$client_name.key.pem"
 
 passin_string="-passin pass:password"
+
+if [ "$parent_type" == "master" ]; then
+
+    parent_cert=$master_cert
+    parent_cert_chain=$master_cert_chain
+    parent_config=$master_config
+    parent_crl=$master_crl
+    parent_csr=$master_csr
+    parent_database=$master_database
+    parent_key=$master_key
+    parent_serial=$master_serial
+
+else
+    if [ "$parent_type" == "intermediate" ]; then
+
+        parent_cert=$intermediate_cert
+        parent_cert_chain=$intermediate_cert_chain
+        parent_config=$intermediate_config
+        parent_crl=$intermediate_crl
+        parent_csr=$intermediate_csr
+        parent_database=$intermediate_serial
+        parent_key=$intermediate_key
+        parent_serial=$intermediate_serial
+    fi
+fi

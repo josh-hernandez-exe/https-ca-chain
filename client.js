@@ -3,12 +3,12 @@ var https = require('https');
 var constants = require('constants');
 var config = JSON.parse(fs.readFileSync("config.json"));
 
-clientPrefix=""
+clientSuffix=""
 if (process.argv[2]) {
-    var clientPrefix= process.argv[2];
+    var clientSuffix= process.argv[2];
 }
 
-var clientName="client"+clientPrefix;
+var clientName="client"+clientSuffix;
 var clientFolder=__dirname+"/client";
 
 var clientKeyFile=[
@@ -66,8 +66,8 @@ var options = {
 
 
 https.globalAgent.options.ca = [];
-https.globalAgent.options.ca.push(fs.readFileSync(__dirname+"/"+config.intermediate.chain));
-// https.globalAgent.options.ca.push(fs.readFileSync(__dirname+"/"+config.master.cert));
+// https.globalAgent.options.ca.push(fs.readFileSync(__dirname+"/"+config.intermediate.chain));
+https.globalAgent.options.ca.push(fs.readFileSync(__dirname+"/"+config.master.cert));
 
 var req = https.request(options, function(res) {
     res.on('data', function(data) {

@@ -3,12 +3,12 @@ var https = require('https');
 var constants = require('constants');
 var config = JSON.parse(fs.readFileSync("config.json"));
 
-clientPrefix=""
+serverSuffix=""
 if (process.argv[2]) {
-    var clientPrefix= process.argv[2];
+    var serverSuffix= process.argv[2];
 }
 
-var serverName="server"+clientPrefix;
+var serverName="server"+serverSuffix;
 var serverFolder=__dirname+"/server";
 
 var serverKeyFile=[
@@ -37,7 +37,8 @@ var serverCertChainFile=[
 // ]
 
 
-var crlFile = __dirname + "/" + config.intermediate.crl;
+// var crlFile = __dirname + "/" + config.intermediate.crl;
+var crlFile = __dirname + "/" + config.master.crl;
 
 // var options = {
 //     key: fs.readFileSync(serverKeyFile),
@@ -66,14 +67,14 @@ var options = {
     cert: fs.readFileSync(serverCertFile),
     ca: fs.readFileSync(serverCertChainFile),
     crl: fs.readFileSync(crlFile),
-    requestCert: true
-    // rejectUnauthorized: true
+    requestCert: true,
+    rejectUnauthorized: true
 };
 
 
 https.globalAgent.options.ca = [];
-https.globalAgent.options.ca.push(fs.readFileSync(__dirname+"/"+config.intermediate.chain));
-// https.globalAgent.options.ca.push(fs.readFileSync(__dirname+"/"+config.master.cert));
+// https.globalAgent.options.ca.push(fs.readFileSync(__dirname+"/"+config.intermediate.chain));
+https.globalAgent.options.ca.push(fs.readFileSync(__dirname+"/"+config.master.cert));
 
 https.createServer(options, function (req, res) {
     if (req.socket.authorized){ // shouldn't even get here if not authorized

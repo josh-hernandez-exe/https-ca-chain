@@ -9,13 +9,38 @@ echo "#######################"
 
 cd $project_root
 
-# This makes it easy to make multiple server certs
 server_index=""
-if [[ $1 -ne "" ]];then
-	server_index=$1
-fi
+parent_type="intermediate"
+
+while [[ $# -gt 0 ]]; do
+key="$1"
+value="$2"
+case $key in
+
+    --debug)
+      set -x
+    ;;
+
+    --name)
+    # This makes it easy to make multiple server certs
+      server_index="$value"
+      shift
+    ;;
+
+    --parent-type)
+      parent_type="$value"
+      shift
+    ;;
+
+esac
+shift
+done
 
 source scripts/load_vars.sh
+
+if [ "$parent_cert" == "" ];then
+    exit 1;
+fi
 
 echo "[ req ]
 default_bits           = 4096
@@ -39,13 +64,13 @@ challengePassword      = password
 
 [ v3_ca ]
 authorityInfoAccess = @issuer_info
+keyUsage = critical, nonRepudiation, digitalSignature, keyEncipherment
+extendedKeyUsage = serverAuth, emailProtection
 
 [ issuer_info ]
 OCSP;URI.0 = http://ocsp.example.com/
 caIssuers;URI.0 = http://example.com/ca.cert
 " > $server_config
-
-
 
 # Create Key
 openssl genrsa -out $server_key 4096
@@ -63,8 +88,8 @@ openssl x509 -req \
     -extfile $server_config \
     -days 999 \
     -in $server_csr \
-    -CA $intermediate_cert \
-    -CAkey $intermediate_key \
+    -CA $parent_cert \
+    -CAkey $parent_key \
     -CAcreateserial \
     -out $server_cert \
     $passin_string
@@ -72,10 +97,10 @@ openssl x509 -req \
 chmod 444 $server_cert
 
 ### Verify Intermediate Certificate Info
-openssl verify -CAfile $intermediate_cert_chain $server_cert
+openssl verify -CAfile $parent_cert $server_cert
 
 # Create Cerfificate Chain
-cat $server_cert $intermediate_cert_chain > $server_chain
+cat $server_cert $parent_cert_chain > $server_chain
 chmod 444 $server_chain
 
 echo "Server Key Creation Complete"
