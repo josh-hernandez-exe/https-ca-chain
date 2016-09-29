@@ -1,0 +1,12 @@
+{
+	"hostname":"localhost",
+	"port":1337,
+	"master":{
+		"cert":"master/certs/master.cert.pem"
+	},
+	"intermediate":{
+		"cert":"intermediate/certs/intermediate.cert.pem",
+		"chain":"intermediate/certs/intermediate.chain.cert.pem",
+		"crl":"intermediate/crl/intermediate.crl.pem"
+	}
+}

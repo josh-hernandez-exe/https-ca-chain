@@ -3,8 +3,9 @@ parent_path=$( cd "$(dirname "${BASH_SOURCE}")" ; pwd -P )
 project_root=$(dirname "$parent_path")
 previous_dir=$(pwd)
 
-intermediate_crl_path="$project_root/intermediate/crl/intermediate.crl.pem"
+cd $project_root
+source scripts/load_vars.sh
 
 # View CRL
-openssl crl -text -noout -in $intermediate_crl_path
+openssl crl -text -noout -in $intermediate_crl
 cd $previous_dir

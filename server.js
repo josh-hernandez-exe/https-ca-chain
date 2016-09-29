@@ -1,19 +1,20 @@
 var fs = require('fs');
 var https = require('https');
 var constants = require('constants');
+var config = JSON.parse(fs.readFileSync("config.json"));
 
 clientPrefix=""
 if (process.argv[2]) {
     var clientPrefix= process.argv[2];
 }
 
-var serverName="server"+clientPrefix+"-key";
+var serverName="server"+clientPrefix;
 var serverFolder=__dirname+"/server";
 
 var serverKeyFile=[
     serverFolder,
     "private",
-    serverName+".pem"
+    serverName+".key.pem"
 ].join("/");
 
 var serverCertFile=[
@@ -28,15 +29,21 @@ var serverCertChainFile=[
     serverName+".chain.cert.pem"
 ].join("/");
 
-var crlFile = __dirname + "/intermediate/crl/intermediate.crl.pem";
 
-var port = 4433;
+// var serverCertChainList = [
+//     fs.readFileSync(serverCertFile),
+//     fs.readFileSync(__dirname+"/"+config.intermediate.cert),
+//     fs.readFileSync(__dirname+"/"+config.master.cert)
+// ]
+
+
+var crlFile = __dirname + "/" + config.intermediate.crl;
 
 // var options = {
 //     key: fs.readFileSync(serverKeyFile),
 //     cert: fs.readFileSync(serverCertFile),
 //     ca: fs.readFileSync(serverCertChainFile),
-//     // crl: fs.readFileSync(crlFile),
+//     crl: fs.readFileSync(crlFile),
 //     passphrase:"",
 //     requestCert: true, 
 //     rejectUnauthorized: true,
@@ -53,18 +60,20 @@ var port = 4433;
 //     secureProtocol: 'TLSv1_method'
 // };
 
+
 var options = {
     key: fs.readFileSync(serverKeyFile),
     cert: fs.readFileSync(serverCertFile),
     ca: fs.readFileSync(serverCertChainFile),
     crl: fs.readFileSync(crlFile),
-    passphrase:"",
-    requestCert: true,
+    requestCert: true
     // rejectUnauthorized: true
 };
 
+
 https.globalAgent.options.ca = [];
-https.globalAgent.options.ca.push(fs.readFileSync(__dirname+"/intermediate/certs/ca-chain.cert.pem"));
+https.globalAgent.options.ca.push(fs.readFileSync(__dirname+"/"+config.intermediate.chain));
+// https.globalAgent.options.ca.push(fs.readFileSync(__dirname+"/"+config.master.cert));
 
 https.createServer(options, function (req, res) {
     if (req.socket.authorized){ // shouldn't even get here if not authorized
@@ -72,13 +81,13 @@ https.createServer(options, function (req, res) {
             new Date(),
             req.connection.remoteAddress,
             req.socket.getPeerCertificate().subject.CN
-        ].join("\t"))
+        ].join("\t"));
         res.writeHead(200);
         res.end("hello world\n");
     } else {
         console.log("Rejected");
-        console.log(req.socket)
+        // console.log(req.socket.getPeerCertificate());
     }
-}).listen(port);
+}).listen(config.port);
 
-console.log('listening on 0.0.0.0:'+port);
+console.log('listening on 0.0.0.0:'+config.port);

@@ -12,25 +12,43 @@ echo "#######################"
 cd $project_root
 
 client_index="bad"
+if [[ $1 -ne "" ]];then
+	client_index=$1
+fi
 
-client_name="client$client_index-key"
-client_private_key="client/private/$client_name.pem"
-client_cert="client/certs/$client_name.cert.pem"
-client_chain="client/certs/$client_name.chain.cert.pem"
+source scripts/load_vars.sh
+
+echo "[ req ]
+default_bits           = 4096
+days                   = 9999
+distinguished_name     = req_distinguished_name
+attributes             = req_attributes
+output_password        = password
+prompt                 = no
+
+[ req_distinguished_name ]
+C                      = XX
+ST                     = YY
+L                      = Somecity
+O                      = Example Co
+OU                     = Example Team
+CN                     = $client_common_name
+emailAddress           = certs@example.com
+
+[ req_attributes ]
+challengePassword      = password
+" > $client_config
 
 
-## Create Key for self signed cert
-openssl genrsa -out $client_private_key
+# Create Key and Certificate
 
-extension_flag=""
-# extension_flag="-extensions usr_cert"
+openssl req -new -x509 \
+    -days 9999 \
+    -config $client_config \
+    -keyout $client_key \
+    -out $client_cert \
 
-## Create Certificate
-openssl req \
-    -config intermediate/openssl.cnf \
-    -key $client_private_key \
-    -new -x509 -days 7300 -sha256 $extension_flag \
-    -out $client_cert
+exit
 
 cp $client_cert $client_chain
 cd $previous_dir

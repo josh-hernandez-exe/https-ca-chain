@@ -7,7 +7,7 @@ echo "#######################"
 echo "Clean Setup"
 echo "#######################"
 
-bash $project_root/wipe.sh
+bash $project_root/scripts/wipe.sh
 bash $project_root/setup.sh
 
 echo "Done Clean Setup"

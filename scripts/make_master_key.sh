@@ -7,44 +7,55 @@ echo "#######################"
 echo "Create Master Key"
 echo "#######################"
 
-## Prepare Directory
 cd $project_root
-mkdir master
-cd master
-mkdir certs crl newcerts private
-cd ..
-chmod 700 master/private
+source scripts/load_vars.sh
 
-touch master/private/.rand
-touch master/index.txt
+echo "[ ca ]
+default_ca      = CA_default
 
-echo 1000 > master/serial
-# crlnumber is used to keep track of certificate revocation lists.
-echo 1000 > master/crlnumber
+[ CA_default ]
+dir              = $project_root/master
+serial           = \$dir/master.serial
+crl              = \$dir/master.crl.pem
+database         = \$dir/master.database.txt
+name_opt         = CA_default
+cert_opt         = CA_default
+default_crl_days = 9999
+default_md       = sha256
 
-master_config_file="master/openssl.cnf"
-master_private_key="master/private/ca.key.pem"
-master_cert_file="master/certs/ca.cert.pem"
+[ req ]
+default_bits           = 4096
+days                   = 9999
+distinguished_name     = req_distinguished_name
+attributes             = req_attributes
+prompt                 = no
+output_password        = password
 
-if [ ! -f $master_config_file ]; then
-	bash "scripts/make_configs.sh"
-fi
+[ req_distinguished_name ]
+C                      = XX
+ST                     = YY
+L                      = Somecity
+O                      = Example Co
+OU                     = Example Team
+CN                     = master
+emailAddress           = certs@example.com
 
-## Create Master Key, with a password
-openssl genrsa -aes256 -out $master_private_key 4096  # testpassword
-chmod 400 master/private/ca.key.pem
+[ req_attributes ]
+challengePassword      = test
+" > $master_config
 
-## Create Root Certificate
-openssl req -config $master_config_file \
-    -key $master_private_key \
-    -extensions v3_ca \
-    -new -x509 -days 7300 -sha256 \
-    -out $master_cert_file
+openssl req -new -x509 \
+    -days 9999 \
+    -config $master_config \
+    -keyout $master_key \
+    -out $master_cert
 
-chmod 444 $master_cert_file
+# Add a passphrase to an existing private key
+# http://security.stackexchange.com/questions/59136/can-i-add-a-password-to-an-existing-private-key
 
-### View Root Certificate Info
-openssl x509 -noout -text -in $master_cert_file
+# openssl rsa -des3 -in $master_key -out $master_key.temp
+# mv $master_key.temp $master_key
+# rm $master_key.temp
+
 
 echo "Master Key Creation Complete"
-cd $previous_dir

@@ -3,17 +3,22 @@ parent_path=$( cd "$(dirname "${BASH_SOURCE}")" ; pwd -P )
 project_root=$(dirname "$parent_path")
 previous_dir=$(pwd)
 
+cd $project_root
+source scripts/load_vars.sh
+
 echo "#######################"
 echo "Remake Intermediate CRL"
 echo "#######################"
 
-intermediate_crl_path="$project_root/intermediate/crl/intermediate.crl.pem"
-
-rm $intermediate_crl_path
+rm $intermediate_crl
 openssl ca \
-    -config $project_root/intermediate/openssl.cnf \
-    -gencrl -out $intermediate_crl_path
+    -keyfile $intermediate_key \
+    -cert $intermediate_cert \
+    -config $intermediate_config \
+    -gencrl \
+    -out $intermediate_crl \
+    $passin_string
 
 # View CRL
-openssl crl -text -noout -in $intermediate_crl_path
+openssl crl -text -noout -in $intermediate_crl
 cd $previous_dir

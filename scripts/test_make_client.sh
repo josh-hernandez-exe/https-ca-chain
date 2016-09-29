@@ -8,7 +8,7 @@ cd $project_root
 # This makes it easy to make multiple client certs
 client_index=""
 if [[ $1 -ne "" ]];then
-	client_index=$1
+    client_index=$1
 fi
 
 source scripts/load_vars.sh
@@ -30,7 +30,7 @@ C                      = US
 ST                     = MA
 L                      = Boston
 O                      = Example Co
-OU                     = Example Team
+OU                     = techops
 CN                     = $client_common_name
 emailAddress           = certs@example.com
 
@@ -39,6 +39,8 @@ challengePassword      = password
 
 [ v3_ca ]
 authorityInfoAccess = @issuer_info
+keyUsage = critical, nonRepudiation, digitalSignature, keyEncipherment
+extendedKeyUsage = clientAuth, emailProtection
 
 [ issuer_info ]
 OCSP;URI.0 = http://ocsp.example.com/
@@ -46,7 +48,7 @@ caIssuers;URI.0 = http://example.com/ca.cert
 " > $client_config
 
 openssl genrsa -out $client_key 4096
-chmod 400 $client_key
+# chmod 400 $client_key
 
 openssl req -new \
     -config $client_config \
@@ -56,14 +58,14 @@ openssl req -new \
 openssl x509 -req \
     -extfile $client_config \
     -days 999 \
-    $passin_string \
+    -passin "pass:password" \
     -in $client_csr \
-    -CA $intermediate_cert \
+    -CA $intermediate_cert_chain \
     -CAkey $intermediate_key \
     -CAcreateserial \
     -out $client_cert
 
-chmod 444 $client_cert
+# chmod 444 $client_cert
 
 cat $client_cert $intermediate_cert_chain > $client_chain
 

@@ -1,19 +1,20 @@
 var fs = require('fs');
 var https = require('https');
 var constants = require('constants');
+var config = JSON.parse(fs.readFileSync("config.json"));
 
 clientPrefix=""
 if (process.argv[2]) {
     var clientPrefix= process.argv[2];
 }
 
-var clientName="client"+clientPrefix+"-key";
+var clientName="client"+clientPrefix;
 var clientFolder=__dirname+"/client";
 
 var clientKeyFile=[
     clientFolder,
     "private",
-    clientName+".pem"
+    clientName+".key.pem"
 ].join("/");
 
 var clientCertFile=[
@@ -30,7 +31,7 @@ var clientCertChainFile=[
 
 // var options = {
 //     hostname: 'localhost',
-//     port: 4433,
+//     port: config.port,
 //     path: '/',
 //     method: 'GET',
 //     key: fs.readFileSync(clientKeyFile),
@@ -54,20 +55,19 @@ var clientCertChainFile=[
 // };
 
 var options = {
-    hostname: 'localhost',
-    port: 4433,
+    hostname: config.hostname,
+    port: config.port,
     path: '/',
     method: 'GET',
     key: fs.readFileSync(clientKeyFile),
     cert: fs.readFileSync(clientCertFile),
     ca: fs.readFileSync(clientCertFile),
-    passphrase:"",
-    requestCert: true,
-    rejectUnauthorized: true
-};
+    };
+
 
 https.globalAgent.options.ca = [];
-https.globalAgent.options.ca.push(fs.readFileSync(__dirname+"/intermediate/certs/ca-chain.cert.pem"));
+https.globalAgent.options.ca.push(fs.readFileSync(__dirname+"/"+config.intermediate.chain));
+// https.globalAgent.options.ca.push(fs.readFileSync(__dirname+"/"+config.master.cert));
 
 var req = https.request(options, function(res) {
     res.on('data', function(data) {

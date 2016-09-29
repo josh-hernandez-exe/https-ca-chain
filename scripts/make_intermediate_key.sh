@@ -7,78 +7,98 @@ echo "#######################"
 echo "Create Intermediate Key"
 echo "#######################"
 
-## Prepare Directory
 cd $project_root
-mkdir intermediate
-cd intermediate
-mkdir certs crl csr newcerts private
-cd ..
+source scripts/load_vars.sh
 
-chmod 700 intermediate/private
+echo "[ ca ]
+default_ca      = CA_default
 
-touch intermediate/index.txt
+[ CA_default ]
+dir              = $project_root/intermediate
+serial           = \$dir/intermediate.serial
+crl              = \$dir/intermediate.crl.pem
+database         = \$dir/intermediate.database.txt
+name_opt         = CA_default
+cert_opt         = CA_default
+default_crl_days = 9999
+default_md       = sha256
 
-echo 1000 > intermediate/serial
-# crlnumber is used to keep track of certificate revocation lists.
-echo 1000 > intermediate/crlnumber
+[ req ]
+default_bits           = 4096
+days                   = 9999
+distinguished_name     = req_distinguished_name
+attributes             = req_attributes
+prompt                 = no
+output_password        = password
+
+[ req_distinguished_name ]
+C                      = XX
+ST                     = YY
+L                      = Somecity
+O                      = Example Co
+OU                     = Example Team
+CN                     = Intermediate
+emailAddress           = certs@example.com
+
+[ req_attributes ]
+challengePassword      = test
+" > $intermediate_config
 
 
-intermediate_config_file="intermediate/openssl.cnf"
-intermediate_key_file="intermediate/private/intermediate.key.pem"
-intermediate_cert_file="intermediate/certs/intermediate.cert.pem"
-intermediate_csr_file="intermediate/csr/intermediate.csr.pem"
-intermediate_crl_file="intermediate/crl/intermediate.crl.pem"
 
-if [ ! -f $intermediate_config_file ]; then
-    bash "scripts/make_configs.sh"
-fi
 
 
 # Create Key
-openssl genrsa -aes256 \
-    -out $intermediate_key_file 4096 # anotherpassword
-chmod 400 $intermediate_key_file
+openssl genrsa -out $intermediate_key 4096
+# openssl genrsa -aes256 -out $intermediate_key 4096
+
+chmod 400 $intermediate_key
 
 # Generate Certificate Signing Request
-openssl req \
-    -config $intermediate_config_file -new -sha256 \
-    -key $intermediate_key_file \
-    -out $intermediate_csr_file
+openssl req -new \
+    -config $intermediate_config \
+    -key $intermediate_key \
+    -out $intermediate_csr
 
 # Process the CSR
 # Note that the following is done as if it was on machine of the master key
 
-openssl x509 -req -days 999 \
-    -extfile master/openssl.cnf \
-    -in $intermediate_csr_file \
-    -extensions v3_intermediate_ca \
-    -CA master/certs/ca.cert.pem \
-    -CAkey master/private/ca.key.pem \
+openssl x509 -req \
+    -extfile $intermediate_config \
+    -days 999 \
+    -passin "pass:password" \
+    -in $intermediate_csr \
+    -CA $master_cert \
+    -CAkey $master_key \
     -CAcreateserial \
-    -out $intermediate_cert_file
+    -out $intermediate_cert
 
-chmod 444 $intermediate_cert_file
 
-### View intermediate Certificate Info
-openssl x509 -noout -text -in $intermediate_cert_file
+
+chmod 444 $intermediate_cert
 
 ### Verify Intermediate Certificate Info based off Master
-openssl verify -CAfile master/certs/ca.cert.pem $intermediate_cert_file
+openssl verify -CAfile $master_cert $intermediate_cert
 
 # Create Cerfificate Chain
-cat $intermediate_cert_file master/certs/ca.cert.pem > intermediate/certs/ca-chain.cert.pem
-chmod 444 intermediate/certs/ca-chain.cert.pem
+cat $intermediate_cert $master_cert > $intermediate_cert_chain
+chmod 444 $intermediate_cert_chain
 
 # Our certificate chain file must include the root certificate because no client application knows about it yet. 
 # A better option, particularly if you’re administrating an intranet, is to install your root certificate on every client that needs to connect. 
 # In that case, the chain file need only contain your intermediate certificate.
 
+touch $intermediate_database
+
 # create certificate revokation list
-if [ ! -f $intermediate_crl_file ]; then
+if [ ! -f $intermediate_crl ]; then
     openssl ca \
-        -config $intermediate_config_file \
+        -keyfile $intermediate_key \
+        -cert $intermediate_cert \
+        -config $intermediate_config \
         -gencrl \
-        -out $intermediate_crl_file
+        -out $intermediate_crl \
+        -passin "pass:password"
 fi
 
 echo "Intermediate Key Creation Complete"
