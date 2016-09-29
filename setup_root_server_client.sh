@@ -16,6 +16,8 @@ bash "$parent_path/scripts/make_server_key.sh" --parent-type master
 bash "$parent_path/scripts/make_server_selfsigned_key.sh"
 bash "$parent_path/scripts/make_client_selfsigned_key.sh"
 
+source "$parent_path/scripts/load_vars.sh"
+
 cert_to_revoke="$client_cert_dir/client2.cert.pem"
 
 bash "$parent_path/scripts/revoke_certificate.sh" --cert $cert_to_revoke --parent-type master
