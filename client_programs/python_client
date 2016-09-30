@@ -3,6 +3,7 @@ import os
 import sys
 import json
 import requests
+import argparse
 
 """
 Example Uses:
@@ -14,34 +15,28 @@ Example Uses:
 ./client.py --parent-type master 1
 """
 
+project_root=os.path.dirname(os.path.abspath(os.path.dirname(__file__)))
+os.chdir(project_root)
 
-client_suffix = ""
-parent_type = "intermediate"
+parser = argparse.ArgumentParser()
 
-is_arg_used = [False for _ in sys.argv]
+parser.add_argument(
+    dest="client_suffix",
+    default="",
+)
 
-for index,arg in enumerate(sys.argv):
-    if arg == "python":
-        continue
+parser.add_argument(
+    "--parent-type",
+    dest="parent_type",
+    default="intermediate"
+)
 
-    elif arg.endswith(".py") or arg.endswith(".pyc") or arg.endswith(".pyo"):
-        continue
+args = parser.parse_args()
 
-    elif arg == "--parent-type" and len(sys.argv) >= index :
-        parent_type = sys.argv[index+1]
-
-        is_arg_used[index] = True
-        is_arg_used[index+1] = True
-
-    elif not is_arg_used[index] and not client_suffix:
-        client_suffix = arg
-        is_arg_used[index] = True
-
-
-client_name = "client"+ client_suffix
+client_name = "client"+ args.client_suffix
 
 client_folder = os.path.join(
-    os.path.dirname(os.path.abspath(__file__)),
+    project_root,
     "client"
 )
 
@@ -63,7 +58,7 @@ client_cert_chain_file = os.path.join(
     "{client_name}.chain.cert.pem".format(client_name=client_name)
 )
 
-config = json.loads(open("config.json").read())
+config = json.loads(open(os.path.join(project_root, "config.json")).read())
 
 url = "{protocol}://{domain}:{port}/".format(
     protocol="https",
@@ -74,7 +69,7 @@ url = "{protocol}://{domain}:{port}/".format(
 r = requests.get(
     url,
     cert=(client_cert_file, client_key_file),
-    verify=config[parent_type]["chain"],
+    verify=os.path.join(project_root, config[args.parent_type]["chain"]),
 )
 
 print(r)
