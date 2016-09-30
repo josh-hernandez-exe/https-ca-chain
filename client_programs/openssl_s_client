@@ -36,8 +36,14 @@ done
 
 source "$project_root/scripts/load_vars.sh"
 
+# domain=$(python -c "import json;print(json.loads(open(\"config.json\").read())[\"hostname\"])")
+# port=$(python -c "import json;print(json.loads(open(\"config.json\").read())[\"port\"])")
+# url="$domain:$port/"
+
+url=$(cat config.json | jq -r "\"\(.hostname):\(.port)/\"")
+
 openssl s_client \
-  -connect "localhost:1337" \
+  -connect $url \
   -showcerts \
   -CAfile "$parent_cert_chain" \
   -cert "$client_cert" \

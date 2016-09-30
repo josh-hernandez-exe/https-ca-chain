@@ -9,6 +9,13 @@
 # Untested with the root->intermediate->server->client model
 #
 
+
+parent_path=$( cd "$(dirname "${BASH_SOURCE}")" ; pwd -P )
+project_root=$(dirname "$parent_path")
+previous_dir=$(pwd)
+
+cd $project_root
+
 help() {
   echo "USAGE: run.sh [--parent-type TYPE] [--name INDEX]"
   echo "TYPE (default: intermediate)"
@@ -38,13 +45,19 @@ case $key in
       shift
     ;;
     --help|-h)
-      usage
+      help
     ;;
 
 esac
 shift
 done
 
-source "../scripts/load_vars.sh"
+source "scripts/load_vars.sh"
 
-curl --cacert "../$parent_cert_chain" --cert "../$client_cert:password" --key "../$client_key" "https://localhost:1337/"
+# domain=$(python -c "import json;print(json.loads(open(\"config.json\").read())[\"hostname\"])")
+# port=$(python -c "import json;print(json.loads(open(\"config.json\").read())[\"port\"])")
+# url="https://$domain:$port/"
+
+url=$(cat config.json | jq -r "\"https://\(.hostname):\(.port)/\"")
+
+curl --cacert "$parent_cert_chain" --cert "$client_cert:password" --key "$client_key" $url
