@@ -11,36 +11,31 @@ var clientSuffix=""
 var parentType="intermediate"
 
 var isUsed = []
-process.argv.forEach(function(v,i,a){
+process.argv.forEach(function(value,index,array){
     isUsed.push(false)
 })
-for (var i = 0; i < process.argv.length; i++) {
+process.argv.forEach(function(value,index,array){
+    if (isUsed[index]){
+        // do nothing
+    } else if (index==0){
+        isUsed[index]=true;
 
-    if (isUsed[i]){
-        continue;
-
-    } else if (i==0){
-        isUsed[i]=true;
-        continue;
-
-    } else if (process.argv[i] === __filename ){
-        isUsed[i] = true;
-        continue;
+    } else if (value === __filename ){
+        isUsed[index] = true;
 
     } else if (
-        process.argv[i] === "--parent-type" &&
-        process.argv.length >= i
-    ){
-        parentType = process.argv[i+1];
-        isUsed[i] = true;
-        isUsed[i+1] = true;
+        value === "--parent-type" &&
+        array.length >= index
+    ) {
+        parentType = array[index+1];
+        isUsed[index] = true;
+        isUsed[index+1] = true;
 
-    } else if (!isUsed[i]) {
-        clientSuffix=process.argv[i];
-        isUsed[i] = true;
-
+    } else if (!isUsed[index]) {
+        serverSuffix=value;
+        isUsed[index] = true;
     }
-}
+});
 
 var clientName="client"+clientSuffix;
 var clientFolder=projectRoot+"/client";
