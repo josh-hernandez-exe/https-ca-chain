@@ -8,6 +8,7 @@ echo "Create Master Key"
 echo "#######################"
 
 cd $project_root
+source scripts/catch_errors.sh
 source scripts/load_vars.sh
 
 echo "[ ca ]
@@ -22,6 +23,7 @@ name_opt         = CA_default
 cert_opt         = CA_default
 default_crl_days = 9999
 default_md       = sha256
+x509_extensions  = v3_ca
 
 [ req ]
 default_bits           = 4096
@@ -42,9 +44,15 @@ emailAddress           = certs@example.com
 
 [ req_attributes ]
 challengePassword      = test
+
+[ v3_ca ]
+subjectKeyIdentifier = hash
+authorityKeyIdentifier = keyid:always,issuer
+basicConstraints = critical, CA:true
+keyUsage = critical, digitalSignature, cRLSign, keyCertSign
 " > $master_config
 
-openssl req -new -x509 \
+catch openssl req -new -x509 \
     -days 9999 \
     -config $master_config \
     -keyout $master_key \

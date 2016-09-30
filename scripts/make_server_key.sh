@@ -36,6 +36,7 @@ esac
 shift
 done
 
+source scripts/catch_errors.sh
 source scripts/load_vars.sh
 
 if [ "$parent_cert" == "" ];then
@@ -63,6 +64,8 @@ emailAddress           = certs@example.com
 challengePassword      = password
 
 [ v3_ca ]
+subjectKeyIdentifier = hash
+authorityKeyIdentifier = keyid,issuer:always
 authorityInfoAccess = @issuer_info
 keyUsage = critical, nonRepudiation, digitalSignature, keyEncipherment
 extendedKeyUsage = serverAuth, emailProtection
@@ -73,18 +76,18 @@ caIssuers;URI.0 = http://example.com/ca.cert
 " > $server_config
 
 # Create Key
-openssl genrsa -out $server_key 4096
-chmod 400 $server_private_key
+catch openssl genrsa -out $server_key 4096
+chmod 400 $server_key
 
 # Generate Certificate Signing Request
-openssl req -new \
+catch openssl req -new \
     -config $server_config \
     -key $server_key \
     -out $server_csr
 
 # Process the CSR
 # Note that the following is done as if it was on machine of the intermediate key
-openssl x509 -req \
+catch openssl x509 -req \
     -extfile $server_config \
     -days 999 \
     -in $server_csr \
@@ -97,7 +100,7 @@ openssl x509 -req \
 chmod 444 $server_cert
 
 ### Verify Intermediate Certificate Info
-openssl verify -CAfile $parent_cert $server_cert
+catch openssl verify -CAfile $parent_cert_chain $server_cert
 
 # Create Cerfificate Chain
 cat $server_cert $parent_cert_chain > $server_chain

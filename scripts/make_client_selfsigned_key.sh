@@ -16,6 +16,7 @@ if [[ $1 -ne "" ]];then
 	client_index=$1
 fi
 
+source scripts/catch_errors.sh
 source scripts/load_vars.sh
 
 echo "[ req ]
@@ -42,13 +43,11 @@ challengePassword      = password
 
 # Create Key and Certificate
 
-openssl req -new -x509 \
+catch openssl req -new -x509 \
     -days 9999 \
     -config $client_config \
     -keyout $client_key \
     -out $client_cert \
-
-exit
 
 cp $client_cert $client_chain
 cd $previous_dir

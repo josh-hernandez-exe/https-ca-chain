@@ -46,7 +46,7 @@ var crlFile = __dirname + "/" + config.master.crl;
 //     ca: fs.readFileSync(serverCertChainFile),
 //     crl: fs.readFileSync(crlFile),
 //     passphrase:"",
-//     requestCert: true, 
+//     requestCert: true,
 //     rejectUnauthorized: true,
 //     ciphers: [
 //       "ECDHE-RSA-AES128-SHA256",

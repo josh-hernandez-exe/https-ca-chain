@@ -8,6 +8,7 @@ echo "Create Intermediate Key"
 echo "#######################"
 
 cd $project_root
+source scripts/catch_errors.sh
 source scripts/load_vars.sh
 
 echo "[ ca ]
@@ -30,6 +31,7 @@ distinguished_name     = req_distinguished_name
 attributes             = req_attributes
 prompt                 = no
 output_password        = password
+x509_extensions        = v3_int_ca
 
 [ req_distinguished_name ]
 C                      = XX
@@ -37,11 +39,17 @@ ST                     = YY
 L                      = Somecity
 O                      = Example Co
 OU                     = Example Team
-CN                     = Intermediate
+CN                     = intermediate
 emailAddress           = certs@example.com
 
 [ req_attributes ]
 challengePassword      = test
+
+[ v3_int_ca ]
+subjectKeyIdentifier = hash
+authorityKeyIdentifier = keyid:always,issuer
+basicConstraints = critical, CA:true, pathlen:0
+keyUsage = critical, digitalSignature, cRLSign, keyCertSign
 " > $intermediate_config
 
 
@@ -49,13 +57,13 @@ challengePassword      = test
 
 
 # Create Key
-openssl genrsa -out $intermediate_key 4096
+catch openssl genrsa -out $intermediate_key 4096
 # openssl genrsa -aes256 -out $intermediate_key 4096
 
 chmod 400 $intermediate_key
 
 # Generate Certificate Signing Request
-openssl req -new \
+catch openssl req -new \
     -config $intermediate_config \
     -key $intermediate_key \
     -out $intermediate_csr
@@ -63,7 +71,7 @@ openssl req -new \
 # Process the CSR
 # Note that the following is done as if it was on machine of the master key
 
-openssl x509 -req \
+catch openssl x509 -req \
     -extfile $intermediate_config \
     -days 999 \
     -passin "pass:password" \
@@ -78,21 +86,21 @@ openssl x509 -req \
 chmod 444 $intermediate_cert
 
 ### Verify Intermediate Certificate Info based off Master
-openssl verify -CAfile $master_cert $intermediate_cert
+catch openssl verify -CAfile $master_cert $intermediate_cert
 
 # Create Cerfificate Chain
-cat $intermediate_cert $master_cert > $intermediate_cert_chain
+cat $master_cert $intermediate_cert > $intermediate_cert_chain
 chmod 444 $intermediate_cert_chain
 
-# Our certificate chain file must include the root certificate because no client application knows about it yet. 
-# A better option, particularly if you’re administrating an intranet, is to install your root certificate on every client that needs to connect. 
+# Our certificate chain file must include the root certificate because no client application knows about it yet.
+# A better option, particularly if you’re administrating an intranet, is to install your root certificate on every client that needs to connect.
 # In that case, the chain file need only contain your intermediate certificate.
 
 touch $intermediate_database
 
 # create certificate revokation list
 if [ ! -f $intermediate_crl ]; then
-    openssl ca \
+    catch openssl ca \
         -keyfile $intermediate_key \
         -cert $intermediate_cert \
         -config $intermediate_config \

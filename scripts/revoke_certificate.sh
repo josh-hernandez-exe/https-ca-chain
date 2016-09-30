@@ -4,6 +4,7 @@ project_root=$(dirname "$parent_path")
 previous_dir=$(pwd)
 
 cd $project_root
+source scripts/catch_errors.sh
 source scripts/load_vars.sh
 
 
@@ -50,7 +51,7 @@ if [ ! -f "$cert_to_revoke" ]; then
 	exit 1;
 fi
 
-openssl ca \
+catch openssl ca \
    -revoke $cert_to_revoke \
    -keyfile $parent_key \
    -config $parent_config \
@@ -58,6 +59,6 @@ openssl ca \
    $passin_string
 
 echo "Remake the certificate revocation list"
-bash "$parent_path/remake_intermediate_crl.sh" --parent-type $parent_type
+catch bash "$parent_path/remake_intermediate_crl.sh" --parent-type $parent_type
 
 echo "Certificate Revocation Completed: $cert_to_revoke"

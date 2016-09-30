@@ -1,0 +1,48 @@
+#!/bin/bash
+parent_path=$( cd "$(dirname "${BASH_SOURCE}")" ; pwd -P )
+project_root=$(dirname "$parent_path")
+previous_dir=$(pwd)
+
+cd $project_root
+
+# This makes it easy to make multiple client certs
+
+client_index=""
+parent_type="intermediate"
+
+while [[ $# -gt 0 ]]; do
+key="$1"
+value="$2"
+case $key in
+
+    --debug)
+      set -x
+    ;;
+
+    --name)
+    # This makes it easy to make multiple server certs
+      client_index="$value"
+      shift
+    ;;
+
+    --parent-type)
+      parent_type="$value"
+      shift
+    ;;
+
+esac
+shift
+done
+
+source "$project_root/scripts/load_vars.sh"
+
+openssl s_client \
+  -connect "localhost:1337" \
+  -showcerts \
+  -CAfile "$parent_cert_chain" \
+  -cert "$client_cert" \
+  -key "$client_key" \
+  -pass "pass:password" \
+  -verify 3
+
+exit $?

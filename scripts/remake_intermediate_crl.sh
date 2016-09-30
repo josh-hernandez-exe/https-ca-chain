@@ -25,6 +25,7 @@ esac
 shift
 done
 
+source scripts/catch_errors.sh
 source scripts/load_vars.sh
 
 if [ "$parent_cert" == "" ];then
@@ -36,7 +37,7 @@ echo "Remake Intermediate CRL"
 echo "#######################"
 
 rm $parent_crl
-openssl ca \
+catch openssl ca \
     -keyfile $parent_key \
     -cert $parent_cert \
     -config $parent_config \
@@ -45,5 +46,5 @@ openssl ca \
     $passin_string
 
 # View CRL
-openssl crl -text -noout -in $parent_crl
+catch openssl crl -text -noout -in $parent_crl
 cd $previous_dir

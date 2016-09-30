@@ -34,6 +34,7 @@ esac
 shift
 done
 
+source scripts/catch_errors.sh
 source scripts/load_vars.sh
 
 if [ "$parent_cert" == "" ];then
@@ -68,6 +69,8 @@ emailAddress           = certs@example.com
 challengePassword      = password
 
 [ v3_ca ]
+subjectKeyIdentifier = hash
+authorityKeyIdentifier = keyid,issuer
 authorityInfoAccess = @issuer_info
 keyUsage = critical, nonRepudiation, digitalSignature, keyEncipherment
 extendedKeyUsage = clientAuth, emailProtection
@@ -77,15 +80,15 @@ OCSP;URI.0 = http://ocsp.example.com/
 caIssuers;URI.0 = http://example.com/ca.cert
 " > $client_config
 
-openssl genrsa -out $client_key 4096
+catch openssl genrsa -out $client_key 4096
 chmod 400 $client_key
 
-openssl req -new \
+catch openssl req -new \
     -config $client_config \
     -key $client_key \
     -out $client_csr
 
-openssl x509 -req \
+catch openssl x509 -req \
     -extfile $client_config \
     -days 999 \
     $passin_string \
@@ -98,6 +101,9 @@ openssl x509 -req \
 chmod 444 $client_cert
 
 cat $client_cert $parent_cert_chain > $client_chain
+
+### Verify Certificate Info
+catch openssl verify -CAfile $parent_cert_chain $client_cert
 
 echo "Client Key Creation Complete"
 cd $previous_dir

@@ -14,6 +14,7 @@ if [[ $1 -ne "" ]];then
 	server_index=$1
 fi
 
+source scripts/catch_errors.sh
 source scripts/load_vars.sh
 
 echo "[ req ]
@@ -48,7 +49,7 @@ caIssuers;URI.0 = http://example.com/ca.cert
 
 # Create Key and Certificate
 
-openssl req -new -x509 \
+catch openssl req -new -x509 \
     -days 9999 \
     -config $server_config \
     -keyout $server_key \
