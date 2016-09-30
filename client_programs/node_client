@@ -95,9 +95,9 @@ var options = {
 
 
 https.globalAgent.options.ca = [];
-if(parentType="master"){
+if(parentType === "master"){
     https.globalAgent.options.ca.push(fs.readFileSync(projectRoot+"/"+config.master.cert));
-} else if(parentType="intermediate"){
+} else if(parentType === "intermediate"){
     https.globalAgent.options.ca.push(fs.readFileSync(projectRoot+"/"+config.intermediate.chain));
 } else {
     throw Error("Parent type not valid");

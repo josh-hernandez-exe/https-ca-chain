@@ -67,4 +67,15 @@ catch openssl req -new -x509 \
 
 touch $master_database
 
+# create certificate revokation list
+if [ ! -f $master_crl ]; then
+    catch openssl ca \
+        -keyfile $master_key \
+        -cert $master_cert \
+        -config $master_config \
+        -gencrl \
+        -out $master_crl \
+        -passin "pass:password"
+fi
+
 echo "Master Key Creation Complete"
