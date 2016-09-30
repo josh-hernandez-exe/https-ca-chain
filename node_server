@@ -1,15 +1,52 @@
+#!/usr/bin/env node
+
 var fs = require('fs');
 var https = require('https');
 var constants = require('constants');
 var config = JSON.parse(fs.readFileSync("config.json"));
 
-serverSuffix=""
-if (process.argv[2]) {
-    var serverSuffix= process.argv[2];
+// Just in case we move make multiple server and move them into a folder
+var projectRoot = __dirname
+
+var serverSuffix=""
+var parentType="intermediate"
+
+var isUsed = []
+process.argv.forEach(function(v,i,a){
+    isUsed.push(false)
+})
+for (var i = 0; i < process.argv.length; i++) {
+
+    if (isUsed[i]){
+        continue;
+
+    } else if (i==0){
+        isUsed[i]=true;
+        continue;
+
+    } else if (process.argv[i] === __filename ){
+        isUsed[i] = true;
+        continue;
+
+    } else if (
+        process.argv[i] === "--parent-type" &&
+        process.argv.length >= i
+    ) {
+        parentType = process.argv[i+1];
+        isUsed[i] = true;
+        isUsed[i+1] = true;
+
+    } else if (!isUsed[i]) {
+        serverSuffix=process.argv[i];
+        isUsed[i] = true;
+
+    }
 }
 
+
+
 var serverName="server"+serverSuffix;
-var serverFolder=__dirname+"/server";
+var serverFolder=projectRoot+"/server";
 
 var serverKeyFile=[
     serverFolder,
@@ -32,13 +69,18 @@ var serverCertChainFile=[
 
 // var serverCertChainList = [
 //     fs.readFileSync(serverCertFile),
-//     fs.readFileSync(__dirname+"/"+config.intermediate.cert),
-//     fs.readFileSync(__dirname+"/"+config.master.cert)
+//     fs.readFileSync(projectRoot+"/"+config.intermediate.cert),
+//     fs.readFileSync(projectRoot+"/"+config.master.cert)
 // ]
 
-
-// var crlFile = __dirname + "/" + config.intermediate.crl;
-var crlFile = __dirname + "/" + config.master.crl;
+var crlFile = "";
+if(parentType="master"){
+    crlFile = projectRoot + "/" + config.master.crl;
+} else if(parentType="intermediate"){
+    crlFile = projectRoot + "/" + config.intermediate.crl;
+} else {
+    throw Error("Parent type not valid");
+}
 
 // var options = {
 //     key: fs.readFileSync(serverKeyFile),
@@ -71,10 +113,15 @@ var options = {
     rejectUnauthorized: true
 };
 
-
 https.globalAgent.options.ca = [];
-// https.globalAgent.options.ca.push(fs.readFileSync(__dirname+"/"+config.intermediate.chain));
-https.globalAgent.options.ca.push(fs.readFileSync(__dirname+"/"+config.master.cert));
+if(parentType="master"){
+    https.globalAgent.options.ca.push(fs.readFileSync(projectRoot+"/"+config.master.cert));
+} else if(parentType="intermediate"){
+    https.globalAgent.options.ca.push(fs.readFileSync(projectRoot+"/"+config.intermediate.chain));
+} else {
+    throw Error("Parent type not valid");
+}
+
 
 https.createServer(options, function (req, res) {
     if (req.socket.authorized){ // shouldn't even get here if not authorized
