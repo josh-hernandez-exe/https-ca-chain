@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+var ws = require('ws');
 var fs = require('fs');
 var https = require('https');
 var constants = require('constants');
@@ -9,6 +10,7 @@ var projectRoot = __dirname+"/.."
 
 var clientSuffix=""
 var parentType="intermediate"
+var useWebsocket = false;
 
 var isUsed = []
 process.argv.forEach(function(value,index,array){
@@ -30,6 +32,10 @@ process.argv.forEach(function(value,index,array){
         parentType = array[index+1];
         isUsed[index] = true;
         isUsed[index+1] = true;
+
+    } else if (value === "--websocket") {
+        useWebsocket = true;
+        isUsed[index] = true;
 
     } else if (!isUsed[index]) {
         serverSuffix=value;
@@ -114,3 +120,17 @@ req.end();
 req.on('error', function(e) {
     console.error(e);
 });
+
+
+if (useWebsocket) {
+
+    var url = config.websocket.protocol+ "://" +  config.hostname + ":" + config.port + config.websocket.endpoint
+
+    ws = new ws(url);
+    ws.on('open', function() {
+        ws.send('something');
+    });
+    ws.on('message', function(message) {
+        console.log('received: %s', message);
+    });
+}

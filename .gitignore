@@ -2,3 +2,4 @@ client/*
 intermediate/*
 master/*
 server/*
+node_modules/**

@@ -1,6 +1,11 @@
 {
 	"hostname":"localhost",
 	"port":1337,
+	"websocket":{
+		"protocol":"wss",
+		"port": 2448,
+		"endpoint":"/websocket"
+	},
 	"master":{
 		"cert":"master/certs/master.cert.pem",
 		"chain":"master/certs/master.cert.pem",
