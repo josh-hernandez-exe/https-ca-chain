@@ -1,9 +1,11 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 import os
 import sys
+import ssl
 import json
 import requests
 import argparse
+import websocket
 
 """
 Example Uses:
@@ -21,7 +23,7 @@ os.chdir(project_root)
 parser = argparse.ArgumentParser()
 
 parser.add_argument(
-    dest="client_suffix",
+    "client_suffix",
     nargs="?",
     default="",
 )
@@ -30,6 +32,13 @@ parser.add_argument(
     "--parent-type",
     dest="parent_type",
     default="intermediate"
+)
+
+parser.add_argument(
+    "--comm-type",
+    dest="comm_type",
+    default="https",
+    choices=["https","websocket"],
 )
 
 args = parser.parse_args()
@@ -61,16 +70,117 @@ client_cert_chain_file = os.path.join(
 
 config = json.loads(open(os.path.join(project_root, "config.json")).read())
 
-url = "{protocol}://{domain}:{port}/".format(
-    protocol="https",
-    domain=config["hostname"],
-    port=config["port"],
-)
 
-r = requests.get(
-    url,
-    cert=(client_cert_file, client_key_file),
-    verify=os.path.join(project_root, config[args.parent_type]["chain"]),
-)
+if args.comm_type == "https":
 
-print(r)
+    url = "{protocol}://{domain}:{port}/".format(
+        protocol="https",
+        domain=config["hostname"],
+        port=config["port"],
+    )
+
+    r = requests.get(
+        url,
+        cert=(client_cert_file, client_key_file),
+        verify=os.path.join(project_root, config[args.parent_type]["chain"]),
+    )
+
+    print(r)
+
+
+elif args.comm_type == "websocket":
+
+
+
+    print("")
+
+
+    ssl_context = ssl.create_default_context(
+        purpose=ssl.Purpose.CLIENT_AUTH,
+        # purpose=ssl.Purpose.SERVER_AUTH,
+        cafile=config[args.parent_type]["chain"],
+    )
+
+    ssl_context.options = ssl.OP_NO_SSLv3 | ssl.OP_NO_SSLv2
+
+    ssl_context.verify_mode = ssl.CERT_NONE
+    # ssl_context.verify_mode = ssl.CERT_REQUIRED
+    # ssl_context.check_hostname = True
+
+    # load the crl information
+    # ssl_context.load_verify_locations(cafile=crlfile)
+
+    # ssl_context.verify_flags = ssl.VERIFY_CRL_CHECK_CHAIN
+    # ssl_context.verify_flags = ssl.VERIFY_CRL_CHECK_LEAF
+
+
+    # Load private key and public cert for the connection
+    ssl_context.load_cert_chain(
+        # certfile=client_cert_file,
+        certfile=client_cert_chain_file,
+        keyfile=client_key_file,
+    )
+
+    url = "{protocol}://{domain}:{port}{endpoint}".format(
+        protocol=config["websocket"]["protocol"],
+        endpoint=config["websocket"]["endpoint"],
+        domain=config["hostname"],
+        port=config["port"],
+    )
+
+    print(url)
+
+
+
+
+
+    from twisted.python import log
+    from twisted.internet import reactor, ssl
+
+    from autobahn.twisted.websocket import WebSocketClientFactory, \
+        WebSocketClientProtocol, connectWS
+
+    class MyClientProtocol(WebSocketClientProtocol):
+
+        def sendHello(self):
+            self.sendMessage("Hello, world!".encode('utf8'))
+
+        def onOpen(self):
+            print('[Websocket][Open]')
+            self.sendHello()
+
+        def onMessage(self,payload,isBinary):
+            print('[Websocket][Message] {}'.format(str(payload)))
+
+        def onConnect(self, response):
+            print('[Websocket][Connect] {}'.format(str(response)))
+
+        def onClose(self, wasClean, code, reason):
+            print('[Websocket][Close] was clean:{wasClean}, code: {code}, reason: {reason}'.format(
+                wasClean=str(wasClean),
+                code=str(code),
+                reason=str(reason),
+            ))
+
+    # create a WS server factory with our protocol
+
+    factory = WebSocketClientFactory(url)
+    factory.protocol = MyClientProtocol
+
+    # SSL client context: default
+
+    if factory.isSecure:
+
+        contextFactory = ssl.DefaultOpenSSLContextFactory(
+            client_key_file,
+            client_cert_file,
+            # sslmethod=ssl.SSL.TLSv1_1_METHOD,
+            sslmethod=ssl.SSL.TLSv1_2_METHOD,
+        )
+    else:
+        contextFactory = None
+
+    connectWS(factory, contextFactory)
+    reactor.run()
+
+
