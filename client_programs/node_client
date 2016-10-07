@@ -10,7 +10,7 @@ var projectRoot = __dirname+"/.."
 
 var clientSuffix=""
 var parentType="intermediate"
-var useWebsocket = false;
+var commType = "https";
 
 var isUsed = []
 process.argv.forEach(function(value,index,array){
@@ -33,15 +33,25 @@ process.argv.forEach(function(value,index,array){
         isUsed[index] = true;
         isUsed[index+1] = true;
 
-    } else if (value === "--websocket") {
-        useWebsocket = true;
+    } else if (
+        value === "--comm-type" &&
+        array.length >= index
+    ) {
+        commType = array[index+1];
         isUsed[index] = true;
+        isUsed[index+1] = true;
+
+        if (!(commType === "https" || commType === "websocket")){
+            console.log("comm-type was given \'"+commType+"\', which is an invalid parameter.")
+            process.exit()
+        }
 
     } else if (!isUsed[index]) {
-        serverSuffix=value;
+        clientSuffix=value;
         isUsed[index] = true;
     }
 });
+
 
 var clientName="client"+clientSuffix;
 var clientFolder=projectRoot+"/client";
@@ -109,28 +119,40 @@ if(parentType === "master"){
     throw Error("Parent type not valid");
 }
 
-var req = https.request(options, function(res) {
-    res.on('data', function(data) {
-        process.stdout.write(data);
+if (commType === "https"){
+    var req = https.request(options, function(res) {
+        res.on('data', function(data) {
+            process.stdout.write(data);
+        });
     });
-});
 
-req.end();
+    req.end();
 
-req.on('error', function(e) {
-    console.error(e);
-});
+    req.on('error', function(e) {
+        console.error(e);
+    });
 
-
-if (useWebsocket) {
+} else if (commType === "websocket") {
+    // don't know how I'm supposed to send client certificate, nor use the client private key
 
     var url = config.websocket.protocol+ "://" +  config.hostname + ":" + config.port + config.websocket.endpoint
 
-    ws = new ws(url);
-    ws.on('open', function() {
-        ws.send('something');
+    var ws_conn = new ws(url);
+
+    ws_conn.on('open', () => {
+        console.log('[Websocket][Connection][Open]');
     });
-    ws.on('message', function(message) {
-        console.log('received: %s', message);
+
+    ws_conn.on('error', (error) => {
+        console.error('[Websocket][Connection][Error]:'+error);
     });
+
+    ws_conn.on('message', (message) => {
+        console.log('[Websocket][Connection][Message]: '+message)
+    });
+
+    ws_conn.on('close', () => {
+        console.log('[Websocket][Connection][Close]');
+    });
+
 }
