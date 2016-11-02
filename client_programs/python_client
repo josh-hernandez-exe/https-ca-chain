@@ -73,10 +73,11 @@ config = json.loads(open(os.path.join(project_root, "config.json")).read())
 
 if args.comm_type == "https":
 
-    url = "{protocol}://{domain}:{port}/".format(
+    url = "{protocol}://{domain}:{port}{endpoint}".format(
         protocol="https",
         domain=config["hostname"],
         port=config["port"],
+        endpoint=config["endpoint"],
     )
 
     r = requests.get(
@@ -137,8 +138,11 @@ elif args.comm_type == "websocket":
     from twisted.python import log
     from twisted.internet import reactor, ssl
 
-    from autobahn.twisted.websocket import WebSocketClientFactory, \
-        WebSocketClientProtocol, connectWS
+    from autobahn.twisted.websocket import (
+        WebSocketClientFactory,
+        WebSocketClientProtocol,
+        connectWS
+    )
 
     class MyClientProtocol(WebSocketClientProtocol):
 

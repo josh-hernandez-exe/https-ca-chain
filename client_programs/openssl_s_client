@@ -40,7 +40,7 @@ source "$project_root/scripts/load_vars.sh"
 # port=$(python -c "import json;print(json.loads(open(\"config.json\").read())[\"port\"])")
 # url="$domain:$port/"
 
-url=$(cat config.json | jq -r "\"\(.hostname):\(.port)/\"")
+url=$(cat config.json | jq -r "\"https://\(.hostname):\(.port)(.endpoint)\"")
 
 openssl s_client \
   -connect $url \

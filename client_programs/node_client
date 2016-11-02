@@ -102,7 +102,7 @@ var clientCertChainFile=[
 var options = {
     hostname: config.hostname,
     port: config.port,
-    path: '/',
+    path: config.endpoint,
     method: 'GET',
     key: fs.readFileSync(clientKeyFile),
     cert: fs.readFileSync(clientCertFile),

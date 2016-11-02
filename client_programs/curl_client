@@ -58,6 +58,6 @@ source "scripts/load_vars.sh"
 # port=$(python -c "import json;print(json.loads(open(\"config.json\").read())[\"port\"])")
 # url="https://$domain:$port/"
 
-url=$(cat config.json | jq -r "\"https://\(.hostname):\(.port)/\"")
+url=$(cat config.json | jq -r "\"https://\(.hostname):\(.port)(.endpoint)\"")
 
 curl --cacert "$parent_cert_chain" --cert "$client_cert:password" --key "$client_key" $url

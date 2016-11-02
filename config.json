@@ -1,6 +1,7 @@
 {
 	"hostname":"localhost",
 	"port":1337,
+	"endpoint": "/",
 	"websocket":{
 		"protocol":"wss",
 		"port": 2448,
