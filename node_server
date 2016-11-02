@@ -120,18 +120,28 @@ if(parentType === "master"){
 
 
 secureServer = https.createServer(options, function (req, res) {
-    if (req.socket.authorized){ // shouldn't even get here if not authorized
-        console.log([
-            new Date(),
-            req.connection.remoteAddress,
-            req.socket.getPeerCertificate().subject.CN
-        ].join("\t"));
-        res.writeHead(200);
-        res.end("hello world\n");
+
+    let authMessage = ''
+    let subjectCN = '';
+
+    if (req.socket.authorized){
+        authMessage = '[Is Authorized]';
     } else {
-        console.log("Rejected");
-        // console.log(req.socket.getPeerCertificate());
+        authMessage = '[Not Authorized]' + '['+ req.socket.authorizationError +']';
     }
+
+    if ('getPeerCertificate' in req.socket){
+        subjectCN = req.socket.getPeerCertificate().subject.CN;
+    } else {
+        subjectCN = '[No Certificate Presented]';
+    }
+    console.log([
+      authMessage,
+      new Date(),
+      req.connection.remoteAddress,
+      subjectCN,
+    ].join(' '));
+
 }).listen(config.port);
 
 console.log('https is listening on 0.0.0.0:'+config.port);
