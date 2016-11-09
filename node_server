@@ -153,13 +153,20 @@ wsConnection = new ws.Server({
 });
 
 wsConnection.on('connection', (websocket) => {
-
+    const closingCode = 1000;
     var logMessageList = [new Date(), '[Websocket][Connection]']
 
     if (websocket._socket.authorized){
-        logMessageList.push('Socket is authenticated.')
+        logMessageList.push('[Is Authorized]')
+
+        if ('getPeerCertificate' in websocket._socket){
+            logMessageList.push(websocket._socket.getPeerCertificate().subject.CN);
+        } else {
+            logMessageList.push('[No Certificate Presented]');
+        }
     } else {
         logMessageList.push(websocket._socket.authorizationError);
+        // websocket.close(closingCode, 'Server is closing the websocket connection');
     }
 
     console.log(logMessageList.join(' '));
