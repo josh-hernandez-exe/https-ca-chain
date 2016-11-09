@@ -11,7 +11,9 @@ echo "#######################"
 
 cd $project_root
 
+client_prefix="client"
 client_index="bad"
+
 if [[ $1 -ne "" ]];then
 	client_index=$1
 fi

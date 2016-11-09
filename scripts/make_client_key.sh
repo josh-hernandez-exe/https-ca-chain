@@ -7,6 +7,7 @@ cd $project_root
 
 # This makes it easy to make multiple client certs
 
+client_prefix="client"
 client_index=""
 parent_type="intermediate"
 
@@ -27,6 +28,11 @@ case $key in
 
     --parent-type)
       parent_type="$value"
+      shift
+    ;;
+
+    --prefix)
+      client_prefix="$value"
       shift
     ;;
 

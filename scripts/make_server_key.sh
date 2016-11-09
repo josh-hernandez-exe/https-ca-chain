@@ -10,6 +10,7 @@ echo "#######################"
 cd $project_root
 
 server_index=""
+server_prefix="server"
 parent_type="intermediate"
 
 while [[ $# -gt 0 ]]; do
@@ -29,6 +30,11 @@ case $key in
 
     --parent-type)
       parent_type="$value"
+      shift
+    ;;
+
+    --prefix)
+      server_prefix="$value"
       shift
     ;;
 

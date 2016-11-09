@@ -10,6 +10,8 @@ echo "Create Self Signed Server Key"
 echo "#######################"
 
 server_index="bad"
+server_prefix="server"
+
 if [[ $1 -ne "" ]];then
 	server_index=$1
 fi
