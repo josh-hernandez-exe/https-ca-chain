@@ -96,6 +96,7 @@ catch openssl req -new \
 
 catch openssl x509 -req \
     -extfile $client_config \
+    -extensions "v3_ca" \
     -days 999 \
     $passin_string \
     -in $client_csr \

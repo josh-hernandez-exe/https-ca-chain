@@ -73,6 +73,7 @@ catch openssl req -new \
 
 catch openssl x509 -req \
     -extfile $intermediate_config \
+    -extensions "v3_int_ca" \
     -days 999 \
     -passin "pass:password" \
     -in $intermediate_csr \

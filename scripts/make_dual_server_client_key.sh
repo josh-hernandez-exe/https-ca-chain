@@ -63,7 +63,7 @@ ST                     = YY
 L                      = Somecity
 O                      = Example Co
 OU                     = Example Team
-CN                     = localhost
+CN                     = $server_name
 emailAddress           = certs@example.com
 
 [ req_attributes ]
@@ -74,7 +74,12 @@ subjectKeyIdentifier = hash
 authorityKeyIdentifier = keyid,issuer:always
 authorityInfoAccess = @issuer_info
 keyUsage = critical, nonRepudiation, digitalSignature, keyEncipherment
-extendedKeyUsage = serverAuth, emailProtection
+extendedKeyUsage = serverAuth, clientAuth, emailProtection
+subjectAltName=@SAN
+
+[ SAN ]
+DNS.1 = localhost
+IP.1 = 0.0.0.0
 
 [ issuer_info ]
 OCSP;URI.0 = http://ocsp.example.com/
