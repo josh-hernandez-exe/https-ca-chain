@@ -12,6 +12,7 @@ cd $project_root
 server_index=""
 server_prefix="server"
 parent_type="intermediate"
+bit_size = 4096
 
 while [[ $# -gt 0 ]]; do
 key="$1"
@@ -38,6 +39,11 @@ case $key in
       shift
     ;;
 
+    --bit-size)
+      bit_size="$value"
+      shift
+    ;;
+
 esac
 shift
 done
@@ -50,7 +56,7 @@ if [ "$parent_cert" == "" ];then
 fi
 
 echo "[ req ]
-default_bits           = 4096
+default_bits           = $bit_size
 days                   = 9999
 distinguished_name     = req_distinguished_name
 attributes             = req_attributes
@@ -87,7 +93,7 @@ caIssuers;URI.0 = http://example.com/ca.cert
 " > $server_config
 
 # Create Key
-catch openssl genrsa -out $server_key 4096
+catch openssl genrsa -out $server_key $bit_size
 chmod 400 $server_key
 
 # Generate Certificate Signing Request

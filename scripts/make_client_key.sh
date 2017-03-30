@@ -10,6 +10,7 @@ cd $project_root
 client_prefix="client"
 client_index=""
 parent_type="intermediate"
+bit_size = 4096
 
 while [[ $# -gt 0 ]]; do
 key="$1"
@@ -36,6 +37,10 @@ case $key in
       shift
     ;;
 
+    --bit-size)
+      bit_size="$value"
+      shift
+    ;;
 esac
 shift
 done
@@ -55,7 +60,7 @@ echo "Create Client $client_index Key"
 echo "#######################"
 
 echo "[ req ]
-default_bits           = 4096
+default_bits           = $bit_size
 days                   = 9999
 distinguished_name     = req_distinguished_name
 attributes             = req_attributes
@@ -86,7 +91,7 @@ OCSP;URI.0 = http://ocsp.example.com/
 caIssuers;URI.0 = http://example.com/ca.cert
 " > $client_config
 
-catch openssl genrsa -out $client_key 4096
+catch openssl genrsa -out $client_key $bit_size
 chmod 400 $client_key
 
 catch openssl req -new \
