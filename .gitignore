@@ -3,3 +3,5 @@ intermediate/*
 master/*
 server/*
 node_modules/**
+
+.commands

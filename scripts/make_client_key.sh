@@ -10,7 +10,7 @@ cd $project_root
 client_prefix="client"
 client_index=""
 parent_type="intermediate"
-bit_size = 4096
+bit_size=4096
 
 while [[ $# -gt 0 ]]; do
 key="$1"
@@ -113,6 +113,7 @@ catch openssl x509 -req \
 chmod 444 $client_cert
 
 cat $client_cert $parent_cert_chain > $client_chain
+chmod 444 $client_chain
 
 ### Verify Certificate Info
 catch openssl verify -CAfile $parent_cert_chain $client_cert

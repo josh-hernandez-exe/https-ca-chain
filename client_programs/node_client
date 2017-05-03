@@ -107,7 +107,7 @@ var options = {
     key: fs.readFileSync(clientKeyFile),
     cert: fs.readFileSync(clientCertFile),
     ca: fs.readFileSync(clientCertFile),
-    };
+};
 
 
 https.globalAgent.options.ca = [];
