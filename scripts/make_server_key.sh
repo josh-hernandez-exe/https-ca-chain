@@ -12,7 +12,12 @@ cd $project_root
 server_index=""
 server_prefix="server"
 parent_type="intermediate"
-bit_size = 4096
+bit_size=4096
+
+san_dns_count=0
+san_dns_contents=""
+san_ip_count=0
+san_ip_contents=""
 
 while [[ $# -gt 0 ]]; do
 key="$1"
@@ -38,10 +43,34 @@ case $key in
       server_prefix="$value"
       shift
     ;;
+
     --bit-size)
       bit_size="$value"
       shift
     ;;
+
+    --san-dns)
+      ((san_dns_count++));
+      temp_dns="DNS.$san_dns_count = $value"
+      if [ "$san_dns_contents" == ""];then
+        san_dns_contents="$temp_dns"
+      else
+        san_dns_contents="$san_dns_contents\n$temp_dns"
+      fi
+      shift
+    ;;
+
+    --san-ip)
+      ((san_ip_count++));
+      temp_ip="IP.$san_ip_count = $value"
+      if [ "$san_ip_contents" == ""];then
+        san_ip_contents="$temp_ip"
+      else
+        san_ip_contents="$san_ip_contents\n$temp_ip"
+      fi
+      shift
+    ;;
+
 esac
 shift
 done
@@ -79,6 +108,10 @@ authorityKeyIdentifier = keyid,issuer:always
 authorityInfoAccess = @issuer_info
 keyUsage = critical, nonRepudiation, digitalSignature, keyEncipherment
 extendedKeyUsage = serverAuth, emailProtection
+subjectAltName=@SAN
+
+[ SAN ]
+$(echo -e "$san_dns_contents$san_ip_contents")
 
 [ issuer_info ]
 OCSP;URI.0 = http://ocsp.example.com/
