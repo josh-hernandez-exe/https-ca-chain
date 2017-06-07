@@ -109,6 +109,12 @@ var options = {
     ca: fs.readFileSync(clientCertFile),
 };
 
+var wsOptions = {
+    key: fs.readFileSync(clientKeyFile),
+    cert: fs.readFileSync(clientCertFile),
+    ca: fs.readFileSync(clientCertFile),
+};
+
 
 https.globalAgent.options.ca = [];
 if(parentType === "master"){
@@ -137,7 +143,7 @@ if (commType === "https"){
 
     var url = config.websocket.protocol+ "://" +  config.hostname + ":" + config.port + config.websocket.endpoint
 
-    var ws_conn = new ws(url);
+    var ws_conn = new ws(url, wsOptions);
 
     ws_conn.on('open', () => {
         console.log('[Websocket][Connection][Open]');
