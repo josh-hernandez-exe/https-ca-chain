@@ -106,22 +106,24 @@ var options = {
     method: 'GET',
     key: fs.readFileSync(clientKeyFile),
     cert: fs.readFileSync(clientCertFile),
-    ca: fs.readFileSync(clientCertFile),
+    ca: fs.readFileSync(clientCertChainFile),
 };
 
 var wsOptions = {
     key: fs.readFileSync(clientKeyFile),
     cert: fs.readFileSync(clientCertFile),
-    ca: fs.readFileSync(clientCertFile),
+    ca: fs.readFileSync(clientCertChainFile),
 };
 
 
 https.globalAgent.options.ca = [];
 if(parentType === "master"){
     https.globalAgent.options.ca.push(fs.readFileSync(projectRoot+"/"+config.master.cert));
-} else if(parentType === "intermediate"){
+} 
+if(parentType === "intermediate"){
     https.globalAgent.options.ca.push(fs.readFileSync(projectRoot+"/"+config.intermediate.chain));
-} else {
+}
+if (https.globalAgent.options.ca.length === 0) {
     throw Error("Parent type not valid");
 }
 
@@ -139,8 +141,6 @@ if (commType === "https"){
     });
 
 } else if (commType === "websocket") {
-    // don't know how I'm supposed to send client certificate, nor use the client private key
-
     var url = config.websocket.protocol+ "://" +  config.hostname + ":" + config.port + config.websocket.endpoint
 
     var ws_conn = new ws(url, wsOptions);
