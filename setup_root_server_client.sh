@@ -11,7 +11,7 @@ bash "$parent_path/scripts/make_client_key.sh" --parent-type master
 bash "$parent_path/scripts/make_client_key.sh" --parent-type master --name 1
 bash "$parent_path/scripts/make_client_key.sh" --parent-type master --name 2
 
-bash "$parent_path/scripts/make_server_key.sh" --parent-type master
+bash "$parent_path/scripts/make_server_key.sh" --parent-type master --san-dns localhost
 
 bash "$parent_path/scripts/make_server_selfsigned_key.sh"
 bash "$parent_path/scripts/make_client_selfsigned_key.sh"

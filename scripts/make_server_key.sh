@@ -108,7 +108,7 @@ authorityKeyIdentifier = keyid,issuer:always
 authorityInfoAccess = @issuer_info
 keyUsage = critical, nonRepudiation, digitalSignature, keyEncipherment
 extendedKeyUsage = serverAuth, emailProtection
-subjectAltName=@SAN
+subjectAltName = @SAN
 
 [ SAN ]
 $(echo -e "$san_dns_contents$san_ip_contents")

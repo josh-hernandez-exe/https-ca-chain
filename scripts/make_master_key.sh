@@ -11,19 +11,33 @@ cd $project_root
 source scripts/catch_errors.sh
 source scripts/load_vars.sh
 
+# /usr/lib/ssl/openssl.cnf
 echo "[ ca ]
 default_ca      = CA_default
 
 [ CA_default ]
 dir              = $project_root/master
-serial           = \$dir/master.serial
-crl              = \$dir/master.crl.pem
 database         = \$dir/master.database.txt
+serial           = $master_serial
+new_certs_dir    = \$dir/certs
+crl              = $master_crl
+private_key      = $master_key
+certificate      = $master_cert
 name_opt         = CA_default
 cert_opt         = CA_default
 default_crl_days = 9999
 default_md       = sha256
 x509_extensions  = v3_ca
+policy           = policy_anything
+
+[ policy_anything ]
+countryName             = optional
+stateOrProvinceName     = optional
+localityName            = optional
+organizationName        = optional
+organizationalUnitName  = optional
+commonName              = supplied
+emailAddress            = optional
 
 [ req ]
 default_bits           = 4096
@@ -43,7 +57,7 @@ CN                     = master
 emailAddress           = certs@example.com
 
 [ req_attributes ]
-challengePassword      = test
+challengePassword      = password
 
 [ v3_ca ]
 subjectKeyIdentifier = hash
@@ -66,6 +80,8 @@ catch openssl req -new -x509 \
 # rm $master_key.temp
 
 touch $master_database
+touch "$master_database.attr"
+echo "01" > $master_serial
 
 # create certificate revokation list
 if [ ! -f $master_crl ]; then

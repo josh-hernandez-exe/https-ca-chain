@@ -13,7 +13,7 @@ catch bash "$parent_path/scripts/make_dirs.sh"
 
 catch bash "$parent_path/scripts/make_master_key.sh"
 catch bash "$parent_path/scripts/make_intermediate_key.sh"
-catch bash "$parent_path/scripts/make_server_key.sh"
+catch bash "$parent_path/scripts/make_server_key.sh" --san-dns localhost
 catch bash "$parent_path/scripts/make_client_key.sh"
 catch bash "$parent_path/scripts/make_client_key.sh" --name 1
 catch bash "$parent_path/scripts/make_client_key.sh" --name 2
