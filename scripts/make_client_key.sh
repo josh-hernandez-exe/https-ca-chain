@@ -110,9 +110,17 @@ catch openssl x509 -req \
     -CAcreateserial \
     -out $client_cert
 
-chmod 444 $client_cert
-
 cat $client_cert $parent_cert_chain > $client_chain
+
+tmp_file='/tmp/temp_cert'
+
+cat $client_chain $parent_crl > $tmp_file
+cat $tmp_file > $client_chain
+
+cat $client_cert $parent_crl > $tmp_file
+cat $tmp_file > $client_cert
+
+chmod 444 $client_cert
 chmod 444 $client_chain
 
 ### Verify Certificate Info
