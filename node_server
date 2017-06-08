@@ -69,12 +69,17 @@ var serverCertChainFile=[
 //     fs.readFileSync(projectRoot+"/"+config.master.cert)
 // ]
 
-var crlFile = "";
-if(parentType==="master"){
-    crlFile = projectRoot + "/" + config.master.crl;
-} else if(parentType==="intermediate"){
-    crlFile = projectRoot + "/" + config.intermediate.crl;
-} else {
+var caFiles = [];
+var crlFiles = [];
+if(parentType==="master" || parentType==="intermediate"){
+    caFiles.push(projectRoot + "/" + config.master.cert);
+    crlFiles.push(projectRoot + "/" + config.master.crl);
+}
+if(parentType==="intermediate"){
+    caFiles.push(projectRoot + "/" + config.intermediate.chain);
+    crlFiles.push(projectRoot + "/" + config.intermediate.crl);
+}
+if (crlFiles.length === 0 || caFiles.length === 0) {
     throw Error("Parent type not valid");
 }
 
@@ -103,8 +108,9 @@ if(parentType==="master"){
 var options = {
     key: fs.readFileSync(serverKeyFile),
     cert: fs.readFileSync(serverCertFile),
-    ca: fs.readFileSync(serverCertChainFile),
-    crl: fs.readFileSync(crlFile),
+    // ca: fs.readFileSync(serverCertChainFile),
+    ca: caFiles.map(fileName => fs.readFileSync(fileName)),
+    crl: crlFiles.map(fileName => fs.readFileSync(fileName)),
     requestCert: true,
     // rejectUnauthorized: true
 };
@@ -126,21 +132,26 @@ secureServer = https.createServer(options, function (req, res) {
 
     if (req.socket.authorized){
         authMessage = '[Is Authorized]';
+        res.statusCode = 200;
     } else {
         authMessage = '[Not Authorized]' + '['+ req.socket.authorizationError +']';
+        res.statusCode = 400;
     }
 
     if ('getPeerCertificate' in req.socket){
-        subjectCN = req.socket.getPeerCertificate().subject.CN;
+        subjectCN = '['+req.socket.getPeerCertificate().subject.CN+']';
     } else {
         subjectCN = '[No Certificate Presented]';
     }
     console.log([
-      authMessage,
       new Date(),
+      '[HTTPS]',
+      authMessage,
       req.connection.remoteAddress,
       subjectCN,
     ].join(' '));
+
+    res.end();
 
 }).listen(config.port);
 
@@ -154,27 +165,30 @@ wsConnection = new ws.Server({
 
 wsConnection.on('connection', (websocket) => {
     const closingCode = 1000;
+    let subjectCN = '';
     var logMessageList = [new Date(), '[Websocket][Connection]']
 
     if (websocket._socket.authorized){
         logMessageList.push('[Is Authorized]')
 
-        if ('getPeerCertificate' in websocket._socket){
-            logMessageList.push(websocket._socket.getPeerCertificate().subject.CN);
-        } else {
-            logMessageList.push('[No Certificate Presented]');
-        }
     } else {
-        logMessageList.push(websocket._socket.authorizationError);
+        logMessageList.push('[Not Authorized]['+websocket._socket.authorizationError+']');
         // websocket.close(closingCode, 'Server is closing the websocket connection');
     }
+    if ('getPeerCertificate' in websocket._socket){
+        subjectCN='['+websocket._socket.getPeerCertificate().subject.CN+']';
+    } else {
+        subjectCN='[No Certificate Presented]'
+    }
+    logMessageList.push(subjectCN);
 
     console.log(logMessageList.join(' '));
 
     websocket.on('open', () => {
         console.log([
             new Date(),
-            '[Websocket][Connection][Open]'
+            '[Websocket][Connection][Open]',
+            subjectCN,
         ].join(' '));
     });
 
@@ -182,6 +196,7 @@ wsConnection.on('connection', (websocket) => {
         console.log([
             new Date(),
             '[Websocket][Connection][Error]',
+            subjectCN,
             error
         ].join(' '));
     });
@@ -190,6 +205,7 @@ wsConnection.on('connection', (websocket) => {
         console.log([
             new Date(),
             '[Websocket][Connection][Message]',
+            subjectCN,
             message
         ].join(' '));
 
@@ -198,7 +214,8 @@ wsConnection.on('connection', (websocket) => {
     websocket.on('close', () => {
         console.log([
             new Date(),
-            '[Websocket][Connection][Close]'
+            '[Websocket][Connection][Close]',
+            subjectCN,
         ].join(' '));
     });
 });
