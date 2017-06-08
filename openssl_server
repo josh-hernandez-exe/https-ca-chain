@@ -1,0 +1,16 @@
+#!/bin/bash
+
+# echo "NOTE: Only deals with intermediate setup"
+
+openssl s_server \
+    -accept 1337 \
+    -cert server/certs/server.chain.cert.pem \
+    -CAfile master/certs/master.cert.pem \
+    -key server/private/server.key.pem \
+    -Verify 3 \
+    -verify_return_error \
+    -status_verbose
+
+
+# -CAfile master/certs/master.cert.pem \
+# -CAfile intermediate/certs/intermediate.chain.cert.pem \

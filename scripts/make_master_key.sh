@@ -7,33 +7,91 @@ echo "#######################"
 echo "Create Master Key"
 echo "#######################"
 
-## Prepare Directory
 cd $project_root
-mkdir master
-cd master
-mkdir certs crl newcerts private
-cd ..
-chmod 700 master/private
-touch master/private/.rand
-touch master/index.txt
-echo 1000 > master/serial
-# crlnumber is used to keep track of certificate revocation lists.
-echo 1000 > master/crlnumber
+source scripts/catch_errors.sh
+source scripts/load_vars.sh
 
-## Create Master Key, with a password
-openssl genrsa -aes256 -out master/private/ca.key.pem 4096  # testpassword
-chmod 400 master/private/ca.key.pem
+# /usr/lib/ssl/openssl.cnf
+echo "[ ca ]
+default_ca      = CA_default
 
-## Create Root Certificate
-openssl req -config master/openssl.cnf \
-    -key master/private/ca.key.pem \
-    -new -x509 -days 7300 -sha256 -extensions v3_ca \
-    -out master/certs/ca.cert.pem
+[ CA_default ]
+dir              = $project_root/master
+new_certs_dir    = \$dir/certs
+certificate      = $master_cert
+crl              = $master_crl
+database         = $master_database
+private_key      = $master_key
+serial           = $master_serial
+name_opt         = CA_default
+cert_opt         = CA_default
+default_crl_days = 9999
+default_md       = sha256
+x509_extensions  = v3_ca
+policy           = policy_anything
 
-chmod 444 master/certs/ca.cert.pem
+[ policy_anything ]
+countryName             = optional
+stateOrProvinceName     = optional
+localityName            = optional
+organizationName        = optional
+organizationalUnitName  = optional
+commonName              = supplied
+emailAddress            = optional
 
-### View Root Certificate Info
-openssl x509 -noout -text -in master/certs/ca.cert.pem
+[ req ]
+default_bits           = 4096
+days                   = 9999
+distinguished_name     = req_distinguished_name
+attributes             = req_attributes
+prompt                 = no
+output_password        = password
+
+[ req_distinguished_name ]
+C                      = XX
+ST                     = YY
+L                      = Somecity
+O                      = Example Co
+OU                     = Example Team
+CN                     = master
+emailAddress           = certs@example.com
+
+[ req_attributes ]
+challengePassword      = password
+
+[ v3_ca ]
+subjectKeyIdentifier = hash
+authorityKeyIdentifier = keyid:always,issuer
+basicConstraints = critical, CA:true
+keyUsage = critical, digitalSignature, cRLSign, keyCertSign
+" > $master_config
+
+catch openssl req -new -x509 \
+    -days 9999 \
+    -config $master_config \
+    -keyout $master_key \
+    -out $master_cert
+
+# Add a passphrase to an existing private key
+# http://security.stackexchange.com/questions/59136/can-i-add-a-password-to-an-existing-private-key
+
+# openssl rsa -des3 -in $master_key -out $master_key.temp
+# mv $master_key.temp $master_key
+# rm $master_key.temp
+
+touch $master_database
+touch "$master_database.attr"
+echo "01" > $master_serial
+
+# create certificate revokation list
+if [ ! -f $master_crl ]; then
+    catch openssl ca \
+        -keyfile $master_key \
+        -cert $master_cert \
+        -config $master_config \
+        -gencrl \
+        -out $master_crl \
+        -passin "pass:password"
+fi
 
 echo "Master Key Creation Complete"
-cd $previous_dir

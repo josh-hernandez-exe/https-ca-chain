@@ -6,61 +6,19 @@ previous_dir=$(pwd)
 cd $project_root
 
 # This makes it easy to make multiple client certs
-
-client_prefix="client"
 client_index=""
-parent_type="intermediate"
-bit_size=4096
-
-while [[ $# -gt 0 ]]; do
-key="$1"
-value="$2"
-case $key in
-
-    --debug)
-      set -x
-    ;;
-
-    --name)
-    # This makes it easy to make multiple server certs
-      client_index="$value"
-      shift
-    ;;
-
-    --parent-type)
-      parent_type="$value"
-      shift
-    ;;
-
-    --prefix)
-      client_prefix="$value"
-      shift
-    ;;
-
-    --bit-size)
-      bit_size="$value"
-      shift
-    ;;
-esac
-shift
-done
-
-source scripts/catch_errors.sh
-source scripts/load_vars.sh
-
-if [ "$parent_cert" == "" ];then
-    exit 1;
+if [[ $1 -ne "" ]];then
+    client_index=$1
 fi
 
-
-
+source scripts/load_vars.sh
 
 echo "#######################"
 echo "Create Client $client_index Key"
 echo "#######################"
 
 echo "[ req ]
-default_bits           = $bit_size
+default_bits           = 4096
 days                   = 9999
 distinguished_name     = req_distinguished_name
 attributes             = req_attributes
@@ -72,7 +30,7 @@ C                      = US
 ST                     = MA
 L                      = Boston
 O                      = Example Co
-OU                     = Example Team
+OU                     = techops
 CN                     = $client_common_name
 emailAddress           = certs@example.com
 
@@ -80,8 +38,6 @@ emailAddress           = certs@example.com
 challengePassword      = password
 
 [ v3_ca ]
-subjectKeyIdentifier = hash
-authorityKeyIdentifier = keyid,issuer
 authorityInfoAccess = @issuer_info
 keyUsage = critical, nonRepudiation, digitalSignature, keyEncipherment
 extendedKeyUsage = clientAuth, emailProtection
@@ -91,40 +47,27 @@ OCSP;URI.0 = http://ocsp.example.com/
 caIssuers;URI.0 = http://example.com/ca.cert
 " > $client_config
 
-catch openssl genrsa -out $client_key $bit_size
-chmod 400 $client_key
+openssl genrsa -out $client_key 4096
+# chmod 400 $client_key
 
-catch openssl req -new \
+openssl req -new \
     -config $client_config \
     -key $client_key \
     -out $client_csr
 
-catch openssl x509 -req \
+openssl x509 -req \
     -extfile $client_config \
-    -extensions "v3_ca" \
     -days 999 \
-    $passin_string \
+    -passin "pass:password" \
     -in $client_csr \
-    -CA $parent_cert \
-    -CAkey $parent_key \
+    -CA $intermediate_cert_chain \
+    -CAkey $intermediate_key \
     -CAcreateserial \
     -out $client_cert
 
-cat $client_cert $parent_cert_chain > $client_chain
+# chmod 444 $client_cert
 
-tmp_file='/tmp/temp_cert'
-
-cat $client_chain $parent_crl > $tmp_file
-cat $tmp_file > $client_chain
-
-cat $client_cert $parent_crl > $tmp_file
-cat $tmp_file > $client_cert
-
-chmod 444 $client_cert
-chmod 444 $client_chain
-
-### Verify Certificate Info
-catch openssl verify -CAfile $parent_cert_chain $client_cert
+cat $client_cert $intermediate_cert_chain > $client_chain
 
 echo "Client Key Creation Complete"
 cd $previous_dir

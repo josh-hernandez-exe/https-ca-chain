@@ -1,0 +1,229 @@
+#!/usr/bin/env node
+
+var ws = require('ws');
+var fs = require('fs');
+var https = require('https');
+var constants = require('constants');
+var config = JSON.parse(fs.readFileSync("config.json"));
+
+// Just in case we move make multiple server and move them into a folder
+var projectRoot = __dirname
+
+var serverSuffix=""
+var parentType="intermediate"
+
+var isUsed = []
+process.argv.forEach(function(value,index,array){
+    isUsed.push(false)
+})
+process.argv.forEach(function(value,index,array){
+    if (isUsed[index]){
+        // do nothing
+    } else if (index==0){
+        isUsed[index]=true;
+
+    } else if (value === __filename ){
+        isUsed[index] = true;
+
+    } else if (
+        value === "--parent-type" &&
+        array.length >= index
+    ) {
+        parentType = array[index+1];
+        isUsed[index] = true;
+        isUsed[index+1] = true;
+
+    } else if (!isUsed[index]) {
+        serverSuffix=value;
+        isUsed[index] = true;
+    }
+});
+
+
+
+var serverName="server"+serverSuffix;
+var serverFolder=projectRoot+"/server";
+
+var serverKeyFile=[
+    serverFolder,
+    "private",
+    serverName+".key.pem"
+].join("/");
+
+var serverCertFile=[
+    serverFolder,
+    "certs",
+    serverName+".cert.pem"
+].join("/");
+
+var serverCertChainFile=[
+    serverFolder,
+    "certs",
+    serverName+".chain.cert.pem"
+].join("/");
+
+
+// var serverCertChainList = [
+//     fs.readFileSync(serverCertFile),
+//     fs.readFileSync(projectRoot+"/"+config.intermediate.cert),
+//     fs.readFileSync(projectRoot+"/"+config.master.cert)
+// ]
+
+var caFiles = [];
+var crlFiles = [];
+if(parentType==="master" || parentType==="intermediate"){
+    caFiles.push(projectRoot + "/" + config.master.cert);
+    crlFiles.push(projectRoot + "/" + config.master.crl);
+}
+if(parentType==="intermediate"){
+    caFiles.push(projectRoot + "/" + config.intermediate.chain);
+    crlFiles.push(projectRoot + "/" + config.intermediate.crl);
+}
+if (crlFiles.length === 0 || caFiles.length === 0) {
+    throw Error("Parent type not valid");
+}
+
+// var options = {
+//     key: fs.readFileSync(serverKeyFile),
+//     cert: fs.readFileSync(serverCertFile),
+//     ca: fs.readFileSync(serverCertChainFile),
+//     crl: fs.readFileSync(crlFile),
+//     passphrase:"",
+//     requestCert: true,
+//     rejectUnauthorized: true,
+//     ciphers: [
+//       "ECDHE-RSA-AES128-SHA256",
+//       "DHE-RSA-AES128-SHA256",
+//       "AES128-GCM-SHA256",
+//       "!RC4",
+//       "HIGH",
+//       "!MD5",
+//       "!aNULL"
+//     ].join(":"),
+//     honorCipherOrder: true,
+//     secureProtocol: 'TLSv1_method'
+// };
+
+
+var options = {
+    key: fs.readFileSync(serverKeyFile),
+    cert: fs.readFileSync(serverCertFile),
+    // ca: fs.readFileSync(serverCertChainFile),
+    ca: caFiles.map(fileName => fs.readFileSync(fileName)),
+    crl: crlFiles.map(fileName => fs.readFileSync(fileName)),
+    requestCert: true,
+    // rejectUnauthorized: true
+};
+
+https.globalAgent.options.ca = [];
+if(parentType === "master"){
+    https.globalAgent.options.ca.push(fs.readFileSync(projectRoot+"/"+config.master.cert));
+} else if(parentType === "intermediate"){
+    https.globalAgent.options.ca.push(fs.readFileSync(projectRoot+"/"+config.intermediate.chain));
+} else {
+    throw Error("Parent type not valid");
+}
+
+
+secureServer = https.createServer(options, function (req, res) {
+
+    let authMessage = ''
+    let subjectCN = '';
+
+    if (req.socket.authorized){
+        authMessage = '[Is Authorized]';
+        res.statusCode = 200;
+    } else {
+        authMessage = '[Not Authorized]' + '['+ req.socket.authorizationError +']';
+        res.statusCode = 400;
+    }
+
+    if ('getPeerCertificate' in req.socket){
+        subjectCN = '['+req.socket.getPeerCertificate().subject.CN+']';
+    } else {
+        subjectCN = '[No Certificate Presented]';
+    }
+    console.log([
+      new Date(),
+      '[HTTPS]',
+      authMessage,
+      req.connection.remoteAddress,
+      subjectCN,
+    ].join(' '));
+
+    res.end();
+
+}).listen(config.port);
+
+console.log('https is listening on 0.0.0.0:'+config.port);
+
+
+wsConnection = new ws.Server({
+    server: secureServer,
+    path: config.websocket.endpoint,
+});
+
+wsConnection.on('connection', (websocket) => {
+    const closingCode = 1000;
+    let subjectCN = '';
+    var logMessageList = [new Date(), '[Websocket][Connection]']
+
+    if (websocket._socket.authorized){
+        logMessageList.push('[Is Authorized]')
+
+    } else {
+        logMessageList.push('[Not Authorized]['+websocket._socket.authorizationError+']');
+        websocket.close(closingCode, 'Server is closing the websocket connection');
+    }
+    if ('getPeerCertificate' in websocket._socket){
+        subjectCN='['+websocket._socket.getPeerCertificate().subject.CN+']';
+    } else {
+        subjectCN='[No Certificate Presented]'
+    }
+    logMessageList.push(subjectCN);
+
+    console.log(logMessageList.join(' '));
+
+    websocket.on('open', () => {
+        console.log([
+            new Date(),
+            '[Websocket][Connection][Open]',
+            subjectCN,
+        ].join(' '));
+    });
+
+    websocket.on('error', (error) => {
+        console.log([
+            new Date(),
+            '[Websocket][Connection][Error]',
+            subjectCN,
+            error
+        ].join(' '));
+    });
+
+    websocket.on('message', (message) => {
+        console.log([
+            new Date(),
+            '[Websocket][Connection][Message]',
+            subjectCN,
+            message
+        ].join(' '));
+
+    });
+
+    websocket.on('close', () => {
+        console.log([
+            new Date(),
+            '[Websocket][Connection][Close]',
+            subjectCN,
+        ].join(' '));
+    });
+});
+
+wsConnection.on('error', (error) => {
+    console.log([
+        new Date(),
+        '[Websocket][Error]',
+        error
+    ].join(' '));
+});

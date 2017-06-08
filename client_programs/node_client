@@ -1,0 +1,164 @@
+#!/usr/bin/env node
+
+var ws = require('ws');
+var fs = require('fs');
+var https = require('https');
+var constants = require('constants');
+var config = JSON.parse(fs.readFileSync("config.json"));
+
+var projectRoot = __dirname+"/.."
+
+var clientSuffix=""
+var parentType="intermediate"
+var commType = "https";
+
+var isUsed = []
+process.argv.forEach(function(value,index,array){
+    isUsed.push(false)
+})
+process.argv.forEach(function(value,index,array){
+    if (isUsed[index]){
+        // do nothing
+    } else if (index==0){
+        isUsed[index]=true;
+
+    } else if (value === __filename ){
+        isUsed[index] = true;
+
+    } else if (
+        value === "--parent-type" &&
+        array.length >= index
+    ) {
+        parentType = array[index+1];
+        isUsed[index] = true;
+        isUsed[index+1] = true;
+
+    } else if (
+        value === "--comm-type" &&
+        array.length >= index
+    ) {
+        commType = array[index+1];
+        isUsed[index] = true;
+        isUsed[index+1] = true;
+
+        if (!(commType === "https" || commType === "websocket")){
+            console.log("comm-type was given \'"+commType+"\', which is an invalid parameter.")
+            process.exit()
+        }
+
+    } else if (!isUsed[index]) {
+        clientSuffix=value;
+        isUsed[index] = true;
+    }
+});
+
+
+var clientName="client"+clientSuffix;
+var clientFolder=projectRoot+"/client";
+
+var clientKeyFile=[
+    clientFolder,
+    "private",
+    clientName+".key.pem"
+].join("/");
+
+var clientCertFile=[
+    clientFolder,
+    "certs",
+    clientName+".cert.pem"
+].join("/");
+
+var clientCertChainFile=[
+    clientFolder,
+    "certs",
+    clientName+".chain.cert.pem"
+].join("/");
+
+// var options = {
+//     hostname: 'localhost',
+//     port: config.port,
+//     path: '/',
+//     method: 'GET',
+//     key: fs.readFileSync(clientKeyFile),
+//     cert: fs.readFileSync(clientCertFile),
+//     ca: fs.readFileSync(clientCertFile),
+//     passphrase:"",
+//     requestCert: true,
+//     rejectUnauthorized: true,
+//     ciphers: [
+//       "ECDHE-RSA-AES128-SHA256",
+//       "DHE-RSA-AES128-SHA256",
+//       "AES128-GCM-SHA256",
+//       "!RC4",
+//       "HIGH",
+//       "!MD5",
+//       "!aNULL"
+//     ].join(":"),
+//     honorCipherOrder: true,
+//     secureProtocol: 'TLSv1_method',
+//     secureOptions: constants.SSL_OP_NO_SSLv3 | constants.SSL_OP_NO_SSLv2
+// };
+
+var options = {
+    hostname: config.hostname,
+    port: config.port,
+    path: config.endpoint,
+    method: 'GET',
+    key: fs.readFileSync(clientKeyFile),
+    cert: fs.readFileSync(clientCertFile),
+    ca: fs.readFileSync(clientCertChainFile),
+};
+
+var wsOptions = {
+    key: fs.readFileSync(clientKeyFile),
+    cert: fs.readFileSync(clientCertFile),
+    ca: fs.readFileSync(clientCertChainFile),
+};
+
+
+https.globalAgent.options.ca = [];
+if(parentType === "master"){
+    https.globalAgent.options.ca.push(fs.readFileSync(projectRoot+"/"+config.master.cert));
+} 
+if(parentType === "intermediate"){
+    https.globalAgent.options.ca.push(fs.readFileSync(projectRoot+"/"+config.intermediate.chain));
+}
+if (https.globalAgent.options.ca.length === 0) {
+    throw Error("Parent type not valid");
+}
+
+if (commType === "https"){
+    var req = https.request(options, function(res) {
+        res.on('data', function(data) {
+            process.stdout.write(data);
+        });
+    });
+
+    req.end();
+
+    req.on('error', function(e) {
+        console.error(e);
+    });
+
+} else if (commType === "websocket") {
+    var url = config.websocket.protocol+ "://" +  config.hostname + ":" + config.port + config.websocket.endpoint
+
+    var ws_conn = new ws(url, wsOptions);
+
+    ws_conn.on('open', () => {
+        console.log('[Websocket][Connection][Open]');
+    });
+
+    ws_conn.on('error', (error) => {
+        console.error('[Websocket][Connection][Error]:'+error);
+    });
+
+    ws_conn.on('message', (message) => {
+        console.log('[Websocket][Connection][Message]: '+message)
+    });
+
+    ws_conn.on('close', () => {
+        console.log('[Websocket][Connection][Close]');
+    });
+
+}

@@ -10,4 +10,4 @@ if [ ! -f $cert_file_to_view ]; then
 	exit 1;
 fi
 
-openssl x509 -noout -text -in $cert_file_to_view
+openssl x509 -noout -text -purpose -in $cert_file_to_view

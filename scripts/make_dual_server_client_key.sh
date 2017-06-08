@@ -96,7 +96,7 @@ ST                     = YY
 L                      = Somecity
 O                      = Example Co
 OU                     = Example Team
-CN                     = localhost
+CN                     = $server_name
 emailAddress           = certs@example.com
 
 [ req_attributes ]
@@ -107,8 +107,8 @@ subjectKeyIdentifier = hash
 authorityKeyIdentifier = keyid,issuer:always
 authorityInfoAccess = @issuer_info
 keyUsage = critical, nonRepudiation, digitalSignature, keyEncipherment
-extendedKeyUsage = serverAuth, emailProtection
-subjectAltName = @SAN
+extendedKeyUsage = serverAuth, clientAuth, emailProtection
+subjectAltName=@SAN
 
 [ SAN ]
 $(echo -e "$san_dns_contents$san_ip_contents")
