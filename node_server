@@ -173,7 +173,7 @@ wsConnection.on('connection', (websocket) => {
 
     } else {
         logMessageList.push('[Not Authorized]['+websocket._socket.authorizationError+']');
-        // websocket.close(closingCode, 'Server is closing the websocket connection');
+        websocket.close(closingCode, 'Server is closing the websocket connection');
     }
     if ('getPeerCertificate' in websocket._socket){
         subjectCN='['+websocket._socket.getPeerCertificate().subject.CN+']';
