@@ -17,12 +17,12 @@ default_ca      = CA_default
 
 [ CA_default ]
 dir              = $project_root/master
-database         = \$dir/master.database.txt
-serial           = $master_serial
 new_certs_dir    = \$dir/certs
-crl              = $master_crl
-private_key      = $master_key
 certificate      = $master_cert
+crl              = $master_crl
+database         = $master_database
+private_key      = $master_key
+serial           = $master_serial
 name_opt         = CA_default
 cert_opt         = CA_default
 default_crl_days = 9999

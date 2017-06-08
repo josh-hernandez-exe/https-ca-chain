@@ -26,11 +26,11 @@ default_ca      = CA_default
 [ CA_default ]
 dir              = $project_root/intermediate
 new_certs_dir    = \$dir/certs
-database         = $intermediate_database
-serial           = $intermediate_serial
-crl              = $intermediate_crl
-private_key      = $intermediate_key
 certificate      = $intermediate_cert
+crl              = $intermediate_crl
+database         = $intermediate_database
+private_key      = $intermediate_key
+serial           = $intermediate_serial
 name_opt         = CA_default
 cert_opt         = CA_default
 default_crl_days = 9999
